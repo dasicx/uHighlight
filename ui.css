@@ -1,0 +1,359 @@
+/* uHighlight: what the popup and the settings page have in common, drawn as in
+   uMatrixNG: its condensed font, its icons, its buttons, its cells. The colors are the
+   variables of themes.css, in every theme. */
+
+@font-face {
+    font-family: 'WH Condensed';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Roboto Condensed'), url(fonts/RobotoCondensed-Regular.ttf) format('truetype');
+}
+@font-face {
+    font-family: 'WH Condensed';
+    font-style: normal;
+    font-weight: 300;
+    src: local('Roboto Condensed Light'), url(fonts/RobotoCondensed-Light.ttf) format('truetype');
+}
+
+:root {
+    --wh-font: 'WH Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif;
+    --wh-mono: ui-monospace, Consolas, 'Cascadia Mono', monospace;
+}
+
+html,
+body {
+    background-color: var(--ng-bg);
+    color: var(--ng-text);
+}
+
+body {
+    font-family: var(--wh-font);
+    margin: 0;
+}
+
+a {
+    color: var(--ng-accent);
+}
+
+[hidden] {
+    display: none !important;
+}
+
+/* Visually hidden, still read out */
+.sr-only {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+}
+
+*:focus {
+    outline: none;
+}
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+label:has(> input:focus-visible),
+[role="button"]:focus-visible {
+    outline: 2px solid var(--ng-accent);
+    outline-offset: 1px;
+}
+
+/* Icons: Font Awesome 4.7 symbols (img/icons.svg), as in uMatrixNG. Written as
+   <span class="fa-icon">name</span>; ui.js puts the drawing in place of the name. */
+.fa-icon {
+    align-items: center;
+    background-color: transparent;
+    border: 0;
+    color: inherit;
+    display: inline-flex;
+    fill: currentColor;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    user-select: none;
+}
+.fa-icon > * {
+    pointer-events: none;
+}
+.fa-icon > svg,
+svg[class^="fa-icon_"] {
+    fill: currentColor;
+    flex: none;
+    height: 1em;
+    width: 1em;
+}
+.btn > svg[class^="fa-icon_"] {
+    font-size: 0.85em;
+}
+button.fa-icon {
+    cursor: pointer;
+    font: inherit;
+}
+
+/* An icon button, rounded, of one size, as in the toolbar of uMatrixNG */
+.icon-button {
+    border-radius: 6px;
+    box-sizing: border-box;
+    color: var(--ng-icon);
+    fill: var(--ng-icon);
+    height: 1.8em;
+    min-width: 1.8em;
+    padding: 0 0.3em;
+    transition: background-color 0.12s, transform 0.08s;
+}
+.icon-button:hover {
+    background-color: var(--ng-icon-hover);
+}
+.icon-button:active {
+    background-color: var(--ng-icon-active);
+    transform: scale(0.93);
+}
+.icon-button[disabled] {
+    cursor: default;
+    opacity: 0.3;
+    transform: none;
+}
+.icon-button[disabled]:hover {
+    background-color: transparent;
+}
+
+/* Its number, in a small pill */
+.fa-icon-badge {
+    background-color: var(--ng-accent-bg);
+    border-radius: 999px;
+    box-shadow: 0 0 0 1.5px var(--ng-bg);
+    box-sizing: border-box;
+    color: var(--ng-on-accent);
+    font-family: sans-serif;
+    font-size: 0.5em;
+    font-weight: 600;
+    line-height: 1.5;
+    min-width: 1.5em;
+    padding: 0 0.3em;
+    position: absolute;
+    right: 0;
+    text-align: center;
+    top: 0;
+}
+.fa-icon-badge:empty {
+    display: none;
+}
+
+/* Buttons with words */
+.btn {
+    align-items: center;
+    background-color: var(--ng-button);
+    border: 1px solid var(--ng-button-border);
+    border-radius: 6px;
+    color: var(--ng-text);
+    cursor: pointer;
+    display: inline-flex;
+    flex: none;
+    font: inherit;
+    gap: 0.4em;
+    justify-content: center;
+    line-height: 1.2;
+    padding: 0.25em 0.8em;
+    transition: background-color 0.12s;
+    white-space: nowrap;
+}
+.btn:hover {
+    background-color: var(--ng-button-hover);
+}
+.btn .fa-icon {
+    font-size: 0.85em;
+}
+.btn.primary {
+    background-color: var(--ng-accent-bg);
+    border-color: var(--ng-accent-bg);
+    color: var(--ng-on-accent);
+    font-weight: bold;
+}
+.btn.primary:hover {
+    background-color: var(--ng-accent-bg-hover);
+    border-color: var(--ng-accent-bg-hover);
+}
+.btn.danger {
+    color: var(--ng-off);
+}
+.btn.danger:hover {
+    background-color: var(--ng-block-soft);
+    border-color: var(--ng-block-soft-border);
+    color: var(--ng-on-block-soft);
+}
+.btn[disabled] {
+    cursor: default;
+    opacity: 0.5;
+}
+
+/* Text fields */
+.field {
+    background-color: var(--ng-bg);
+    border: 1px solid var(--ng-button-border);
+    border-radius: 6px;
+    box-sizing: border-box;
+    color: var(--ng-text);
+    font: inherit;
+    min-width: 0;
+    padding: 0.3em 0.55em;
+}
+.field::placeholder {
+    color: var(--ng-text-muted);
+    opacity: 0.8;
+}
+.field:focus,
+.field:focus-visible {
+    border-color: var(--ng-accent-bg);
+    outline: 1px solid var(--ng-accent-bg);
+    outline-offset: 0;
+}
+.field.invalid {
+    background-color: var(--ng-block-soft);
+    border-color: var(--ng-block);
+    color: var(--ng-on-block-soft);
+}
+.field[disabled] {
+    opacity: 0.5;
+}
+
+/* On or off: a cell of the matrix, filled with the green of what is allowed when on,
+   hollow when off */
+input[type="checkbox"].cell {
+    appearance: none;
+    background-color: var(--ng-bg);
+    border: 1px solid var(--ng-button-border);
+    border-radius: 0;
+    cursor: pointer;
+    flex: none;
+    height: 22px;
+    margin: 0;
+    position: relative;
+    width: 22px;
+}
+input[type="checkbox"].cell:hover {
+    border-color: var(--ng-text);
+}
+input[type="checkbox"].cell:checked {
+    background-color: var(--ng-allow);
+    border-color: var(--ng-allow);
+}
+input[type="checkbox"].cell:checked::before {
+    border: solid var(--ng-on-allow);
+    border-width: 0 2px 2px 0;
+    content: '';
+    height: 50%;
+    left: 34%;
+    position: absolute;
+    top: 10%;
+    transform: rotate(45deg);
+    width: 22%;
+}
+input[type="checkbox"].cell:focus-visible {
+    outline: 2px solid var(--ng-accent);
+    outline-offset: 2px;
+}
+input[type="checkbox"].cell[disabled] {
+    cursor: default;
+    opacity: 0.45;
+}
+
+/* On or off: the toggle of the switches of uMatrixNG (a track, and a knob which is a
+   ring when off, filled when on) */
+input[type="checkbox"].switch {
+    appearance: none;
+    background:
+        radial-gradient(circle at 0.5em 50%, var(--ng-bg-raised) 0.36em, var(--ng-scope-hover) 0.38em 0.5em, transparent 0.52em),
+        linear-gradient(var(--ng-scope-hover), var(--ng-scope-hover)) center / 1em 0.5em no-repeat;
+    border: 0;
+    cursor: pointer;
+    flex: none;
+    height: 1em;
+    margin: 0;
+    width: 1.6em;
+}
+input[type="checkbox"].switch:checked {
+    background:
+        radial-gradient(circle at 1.1em 50%, var(--ng-text) 0.5em, transparent 0.52em),
+        linear-gradient(var(--ng-scope-hover), var(--ng-scope-hover)) center / 1em 0.5em no-repeat;
+}
+input[type="checkbox"].switch[disabled] {
+    cursor: default;
+    opacity: 0.45;
+}
+
+/* Menus, as in the popup of uMatrixNG: the page darkens, the menu opens under its button */
+.dropdown-menu-capture {
+    background-color: rgba(0, 0, 0, 0.2);
+    display: none;
+    inset: 0;
+    position: fixed;
+    z-index: 300;
+}
+:root.dark .dropdown-menu-capture {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+.dropdown-menu-capture.show {
+    display: block;
+}
+.dropdown-menu {
+    position: absolute;
+}
+.dropdown-menu > ul {
+    background-color: var(--ng-bg-raised);
+    border: 1px solid var(--ng-border);
+    border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    list-style-type: none;
+    margin: 0;
+    overflow: hidden;
+    padding: 3px 0;
+}
+.dropdown-menu-entry {
+    align-items: center;
+    color: var(--ng-text);
+    cursor: pointer;
+    display: flex;
+    gap: 0.6em;
+    padding: 0.45em 0.8em;
+    white-space: nowrap;
+}
+.dropdown-menu-entry:hover {
+    background-color: var(--ng-icon-hover);
+}
+
+kbd {
+    background-color: var(--ng-bg-raised);
+    border: 1px solid var(--ng-border);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    font-family: var(--wh-mono);
+    font-size: 0.85em;
+    padding: 1px 6px;
+}
+
+code {
+    background-color: var(--ng-bg-raised);
+    border-radius: 2px;
+    font-family: var(--wh-mono);
+    font-size: 0.86em;
+    padding: 1px 5px;
+}
+
+/* Scroll bars in the colors of the theme */
+* {
+    scrollbar-color: var(--ng-scope-hover) transparent;
+    scrollbar-width: thin;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+        animation: none !important;
+    }
+}

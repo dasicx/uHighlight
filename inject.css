@@ -1,0 +1,52 @@
+/* uHighlight - Injected styles for text selection */
+
+/* Ensure highlighted text remains selectable */
+mark.word-highlight,
+mark[data-wh-mark="true"] {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    cursor: text !important;
+    display: inline !important;
+    line-height: inherit !important;
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 0 !important;
+}
+
+/* Wrapper spans should also be selectable */
+[data-wh="true"] {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    cursor: text !important;
+    pointer-events: auto !important;
+    display: inline !important;
+    position: relative !important;
+}
+
+/* Ensure selection works across highlighted elements */
+mark.word-highlight::selection,
+mark[data-wh-mark="true"]::selection,
+[data-wh="true"]::selection {
+    background-color: rgba(0, 123, 255, 0.3) !important;
+}
+
+mark.word-highlight::-moz-selection,
+mark[data-wh-mark="true"]::-moz-selection,
+[data-wh="true"]::-moz-selection {
+    background-color: rgba(0, 123, 255, 0.3) !important;
+}
+
+/* Ensure highlighting doesn't interfere with links */
+a mark.word-highlight,
+a [data-wh="true"] {
+    pointer-events: none !important;
+}
+
+a mark.word-highlight *,
+a [data-wh="true"] * {
+    pointer-events: auto !important;
+}

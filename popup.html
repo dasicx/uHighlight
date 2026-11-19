@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>uHighlight</title>
+    <link rel="stylesheet" href="themes.css">
+    <link rel="stylesheet" href="ui.css">
+    <link rel="stylesheet" href="popup.css">
+    <script src="theme.js"></script>
+</head>
+<body>
+    <div class="paneHead">
+        <a id="gotoDashboard" href="#" title="Open the settings">uHighlight <span class="version"></span></a>
+        <div id="toolbarContainer">
+            <div class="toolbar toolbar-site">
+                <!-- The site: blue when highlighting runs on it. A click turns it on or off. -->
+                <label class="scope" id="siteScope">
+                    <input type="checkbox" id="domainToggle" class="sr-only">
+                    <span class="fa-icon">power-off</span>
+                    <span id="currentDomain">Loading&hellip;</span>
+                    <span class="scope-state" aria-hidden="true"></span>
+                    <span id="domainToggleLabel" class="sr-only">Enable for this domain</span>
+                </label>
+            </div>
+            <div class="toolbar">
+                <button type="button" id="openResults" class="fa-icon icon-button" title="Results: every match on this page" aria-label="Results">list-alt</button>
+                <button type="button" id="buttonOptions" class="fa-icon fa-icon-badged icon-button" data-dropdown="menuOptions" title="Matching options" aria-label="Matching options">ellipsis-v</button>
+                <button type="button" id="openSettings" class="fa-icon icon-button" title="Settings" aria-label="Settings">cog</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="paneContent">
+        <div class="notice notice-error" id="loadError" role="alert" hidden></div>
+        <div class="notice notice-access" id="accessNotice" hidden>
+            <span>uHighlight highlights this page while this popup is open. Allow it to read this site to highlight it on your next visits too.</span>
+            <button type="button" id="allowAccess" class="btn primary">Allow</button>
+        </div>
+
+        <section class="addPane">
+            <div class="input-group">
+                <input type="text" id="wordInput" class="field" placeholder="Word or phrase to highlight" spellcheck="false" autocomplete="off">
+                <select id="addList" class="field" title="The list to add to" aria-label="List" hidden></select>
+                <button type="button" id="openBulk" class="fa-icon icon-button" title="Paste many words, one per line" aria-label="Paste many words">clipboard</button>
+                <button type="button" id="addWord" class="btn primary"><span class="fa-icon">plus</span>Add</button>
+            </div>
+            <div class="bulk-pane" id="bulkPane" hidden>
+                <textarea id="bulkText" class="field" rows="5" spellcheck="false" placeholder="One word or phrase per line"></textarea>
+                <div class="bulk-row">
+                    <label class="bulk-colors"><input type="checkbox" id="bulkColors" class="cell" checked> A different color for each</label>
+                    <button type="button" id="bulkCancel" class="btn">Cancel</button>
+                    <button type="button" id="bulkAdd" class="btn primary" disabled>Add</button>
+                </div>
+            </div>
+            <div class="color-row">
+                <span class="color-label">Highlight</span>
+                <input type="color" id="colorPicker" class="word-color" value="#FFFF00" title="Custom highlight color">
+                <div class="palette" id="palette"></div>
+            </div>
+            <div class="color-row">
+                <span class="color-label">Text</span>
+                <div id="textColorChoice"></div>
+            </div>
+            <div class="color-row">
+                <span class="color-label">Style</span>
+                <div id="styleChoice"></div>
+            </div>
+            <div id="addPreview"></div>
+        </section>
+
+        <section class="listPane">
+            <div class="listHead">
+                <span class="listTitle">Words</span>
+                <span class="listCount"><span id="wordCount"></span> <span id="matchTotal" class="match-total"></span></span>
+            </div>
+            <div class="filter-row" id="filterRow" hidden>
+                <span class="fa-icon">filter</span>
+                <input type="search" id="wordFilter" class="field" placeholder="Filter words&hellip;" aria-label="Filter words" spellcheck="false" autocomplete="off">
+                <span class="filter-count" id="filterCount"></span>
+            </div>
+            <div class="word-list" id="wordList" data-empty="No words yet. Type one above and press Enter, or right-click selected text on a page."></div>
+        </section>
+    </div>
+
+    <div id="statusBar">
+        <div class="add-status" id="addStatus" role="status" hidden>
+            <span id="addStatusText"></span>
+            <button type="button" id="undoButton" class="btn undo" hidden><span class="fa-icon">reply</span>Undo</button>
+        </div>
+        <div class="domain-hint" id="domainHint" hidden></div>
+    </div>
+
+    <div id="menuOptions" class="dropdown-menu-capture">
+        <div class="dropdown-menu">
+            <ul>
+                <li>
+                    <label class="dropdown-menu-entry">
+                        <input type="checkbox" id="caseSensitive" class="switch">
+                        <span class="entry-text">
+                            <span>Case sensitive</span>
+                            <span class="entry-desc">&ldquo;Browser&rdquo; doesn't match &ldquo;browser&rdquo;</span>
+                        </span>
+                    </label>
+                </li>
+                <li>
+                    <label class="dropdown-menu-entry">
+                        <input type="checkbox" id="partialMatch" class="switch">
+                        <span class="entry-text">
+                            <span>Partial word matching</span>
+                            <span class="entry-desc">&ldquo;brow&rdquo; also matches inside &ldquo;browser&rdquo;</span>
+                        </span>
+                    </label>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script src="ui.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>

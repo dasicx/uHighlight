@@ -1,0 +1,15 @@
+# Written by the browser into a folder it loads unpacked
+_metadata/
+
+# Packaged builds and signing keys never belong in the repository
+*.zip
+*.crx
+*.pem
+*.key
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

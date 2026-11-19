@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>uHighlight — Settings</title>
+    <link rel="icon" type="image/png" href="icons/icon32.png">
+    <link rel="stylesheet" href="themes.css">
+    <link rel="stylesheet" href="ui.css">
+    <link rel="stylesheet" href="options.css">
+    <script src="theme.js"></script>
+</head>
+<body class="settingsPage">
+    <nav id="dashboard-nav">
+        <div id="dashboard-nav-widgets">
+            <span class="brand">uHighlight</span>
+            <a class="tabButton" href="#settings" data-pane="settings">Settings</a>
+            <a class="tabButton" href="#websites" data-pane="websites">Websites</a>
+            <a class="tabButton" href="#lists" data-pane="lists">Lists</a>
+            <a class="tabButton" href="#about" data-pane="about">About</a>
+        </div>
+    </nav>
+
+    <main class="body">
+        <!-- Settings: groups by what they are for. Each row: the control, its name, and
+             one line which says what it does. -->
+        <div class="pane" id="pane-settings">
+            <section class="group">
+                <h3>Highlighting</h3>
+                <ul>
+                    <li>
+                        <input type="checkbox" id="globalEnabled" class="cell">
+                        <div class="text">
+                            <div class="line"><label for="globalEnabled">Highlight on all websites</label></div>
+                            <p class="desc">When on, highlighting runs everywhere except the excluded websites.
+                                When off, it only runs on the enabled websites. Excluded websites are never
+                                highlighted, in either mode. <a href="#websites">Edit the lists</a></p>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <section class="group">
+                <h3>Appearance</h3>
+                <ul>
+                    <li class="choice">
+                        <div class="text">
+                            <div class="line"><label class="plain" for="theme">Theme</label></div>
+                            <p class="desc">The colors of the popup and of this page. Auto is light or dark,
+                                as the browser is.</p>
+                        </div>
+                        <select id="theme" class="field">
+                            <option value="auto">Auto</option>
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                            <option value="dracula">Dracula</option>
+                            <option value="nord">Nord</option>
+                            <option value="solarized">Solarized Dark</option>
+                            <option value="gruvbox">Gruvbox Dark</option>
+                        </select>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="showBadge" class="cell">
+                        <div class="text">
+                            <div class="line"><label for="showBadge">Number of matches on the toolbar icon</label></div>
+                            <p class="desc">How many matches the page has, on the uHighlight icon. The popup and the
+                                results panel show them per word.</p>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <section class="group">
+                <h3>Shortcuts</h3>
+                <ul>
+                    <li class="choice">
+                        <div class="text">
+                            <div class="line"><span class="label">Turn highlighting on or off for the current site</span></div>
+                            <p class="desc">Chrome keeps the keyboard shortcuts of extensions on a page of its own.</p>
+                        </div>
+                        <span class="controls">
+                            <kbd id="shortcutKey">not set</kbd>
+                            <button id="changeShortcut" type="button" class="btn">Change&hellip;</button>
+                        </span>
+                    </li>
+                    <li class="choice">
+                        <div class="text">
+                            <div class="line"><span class="label">Highlight selected text</span></div>
+                            <p class="desc"><strong>Right-click</strong> selected text on any page and choose
+                                <em>Highlight &ldquo;&hellip;&rdquo;</em> to add it to your words. This also turns
+                                highlighting on for that site.</p>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <section class="group">
+                <h3>Backup</h3>
+                <ul>
+                    <li class="choice">
+                        <div class="text">
+                            <div class="line"><span class="label">Export settings</span></div>
+                            <p class="desc">Saves your words, colors, options and website lists to a JSON file.</p>
+                        </div>
+                        <button id="exportSettings" type="button" class="btn"><span class="fa-icon">download</span>Export</button>
+                    </li>
+                    <li class="choice">
+                        <div class="text">
+                            <div class="line"><span class="label">Import settings</span></div>
+                            <p class="desc">Shows what the file holds first: merge it with your settings, or replace them.</p>
+                        </div>
+                        <button id="importSettings" type="button" class="btn"><span class="fa-icon">cloud-upload</span>Import&hellip;</button>
+                        <input type="file" id="importFile" accept=".json,application/json" hidden>
+                    </li>
+                    <li class="choice">
+                        <div class="text">
+                            <div class="line"><span class="label">Clear all words</span></div>
+                            <p class="desc">Removes every word of My words (saved lists are kept, and so are your
+                                website settings). You can undo it right after.</p>
+                        </div>
+                        <button id="clearWords" type="button" class="btn danger"><span class="fa-icon">eraser</span>Clear</button>
+                    </li>
+                </ul>
+            </section>
+        </div>
+
+        <!-- Websites: where highlighting runs -->
+        <div class="pane" id="pane-websites" hidden>
+            <section class="group" id="enabledPanel">
+                <h3>Enabled</h3>
+                <div class="groupBody">
+                    <p class="desc">Highlighting runs on these websites. You can also turn it on for the
+                        current site from the toolbar popup.</p>
+                    <div class="access-notice" id="accessNotice" hidden>
+                        <span id="accessText"></span>
+                        <button type="button" id="allowSites" class="btn primary">Allow</button>
+                    </div>
+                    <p class="inactive-note" id="enabledInactive" hidden>
+                        Not used while &ldquo;Highlight on all websites&rdquo; is on.
+                        <a href="#settings">Change it</a>
+                    </p>
+                    <form class="add-site" data-list="enabledDomains">
+                        <input type="text" class="field" placeholder="example.com or *.example.com" aria-label="Website to enable" spellcheck="false" autocomplete="off">
+                        <button type="submit" class="btn primary"><span class="fa-icon">plus</span>Add</button>
+                    </form>
+                    <div class="form-error" hidden></div>
+                    <ul class="site-list" id="enabledList"></ul>
+                </div>
+            </section>
+
+            <section class="group" id="excludedPanel">
+                <h3>Excluded</h3>
+                <div class="groupBody">
+                    <p class="desc">Never highlighted. Use this to leave out a subdomain of an enabled
+                        <code>*.</code> rule, or sites you don't want in all-websites mode.</p>
+                    <form class="add-site" data-list="excludedDomains">
+                        <input type="text" class="field" placeholder="example.com or *.example.com" aria-label="Website to exclude" spellcheck="false" autocomplete="off">
+                        <button type="submit" class="btn primary"><span class="fa-icon">plus</span>Add</button>
+                    </form>
+                    <div class="form-error" hidden></div>
+                    <ul class="site-list" id="excludedList"></ul>
+                </div>
+            </section>
+
+            <p class="footnote">
+                <code>example.com</code> matches that exact site. <code>*.example.com</code> matches
+                example.com and all of its subdomains. You can also paste a full URL.
+            </p>
+        </div>
+
+        <!-- Lists: My words, and saved lists with a scope of their own -->
+        <div class="pane" id="pane-lists" hidden>
+            <section class="group">
+                <h3>Test a page</h3>
+                <div class="groupBody">
+                    <p class="desc">Which lists run on an address, and why.</p>
+                    <form class="add-site" id="testForm">
+                        <input type="text" id="testUrl" class="field" placeholder="https://github.com/org/repo/issues/12" aria-label="Address to test" spellcheck="false" autocomplete="off">
+                        <button type="submit" class="btn primary">Test</button>
+                    </form>
+                    <ul class="test-result" id="testResult"></ul>
+                </div>
+            </section>
+
+            <section class="group">
+                <h3>My words</h3>
+                <div class="groupBody">
+                    <p class="desc" id="myWordsCount"></p>
+                    <p class="desc">Add, edit and color them in the popup, or paste many here.</p>
+                    <div class="bulk-add">
+                        <textarea id="myWordsBulk" class="field" rows="3" spellcheck="false" placeholder="Words to add, one per line"></textarea>
+                        <button type="button" id="myWordsAdd" class="btn"><span class="fa-icon">plus</span>Add words</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="group">
+                <h3>Saved lists</h3>
+                <div class="groupBody">
+                    <p class="desc" id="noLists">No saved lists yet. A saved list is a set of words with its own
+                        scope: the addresses it runs on, and a part of the page it is limited to.</p>
+                    <button type="button" id="newList" class="btn primary"><span class="fa-icon">plus</span>New list</button>
+                </div>
+            </section>
+
+            <div id="lists"></div>
+        </div>
+
+        <!-- About -->
+        <div class="pane" id="pane-about" hidden>
+            <section class="group">
+                <h3>About</h3>
+                <div class="groupBody about">
+                    <div class="aboutHead">
+                        <img src="icons/icon128.png" width="64" height="64" alt="">
+                        <div>
+                            <div class="aboutName">uHighlight <span class="version dim"></span></div>
+                            <p class="desc" id="aboutDescription"></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section class="group">
+                <h3>Support</h3>
+                <ul>
+                    <li class="choice">
+                        <div class="text">
+                            <div class="line"><span class="label">Homepage</span></div>
+                            <p class="desc">News, updates and how to install.</p>
+                        </div>
+                        <a class="contact-link" href="https://dasicx.com/uhighlight.html" target="_blank" rel="noopener">dasicx.com/uhighlight.html</a>
+                    </li>
+                    <li class="choice">
+                        <div class="text">
+                            <div class="line"><span class="label">Problems, questions, suggestions</span></div>
+                            <p class="desc">Say which browser and version you use, and on which site it happens.</p>
+                        </div>
+                        <a class="contact-link" href="mailto:mail@dasicx.com">mail@dasicx.com</a>
+                    </li>
+                </ul>
+            </section>
+            <section class="group">
+                <h3>Credits</h3>
+                <ul class="credits">
+                    <li>Icons: Font Awesome 4.7 by Dave Gandy (SIL OFL 1.1).</li>
+                    <li>Font: Roboto Condensed (Apache License 2.0).</li>
+                </ul>
+            </section>
+        </div>
+    </main>
+
+    <div class="status" id="status" role="status" hidden>
+        <span id="statusText"></span>
+        <button type="button" id="undoButton" class="btn undo" hidden><span class="fa-icon">reply</span>Undo</button>
+    </div>
+
+    <dialog id="importDialog" class="import-dialog">
+        <h3>Import <span id="importFileName" class="mono"></span></h3>
+        <table class="import-table">
+            <thead><tr><th></th><th>Merge</th><th>Replace</th></tr></thead>
+            <tbody id="importRows"></tbody>
+        </table>
+        <p class="desc">Either way, you can undo it right after.</p>
+        <div class="dialog-actions">
+            <button type="button" id="importCancel" class="btn">Cancel</button>
+            <button type="button" id="importReplace" class="btn danger">Replace</button>
+            <button type="button" id="importMerge" class="btn primary">Merge</button>
+        </div>
+    </dialog>
+
+    <script src="shared.js"></script>
+    <script src="ui.js"></script>
+    <script src="options.js"></script>
+</body>
+</html>

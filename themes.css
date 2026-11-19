@@ -1,0 +1,249 @@
+/* uHighlight: themes, the same as uMatrixNG's.
+
+   theme.js sets `data-theme` on the root element of every page (`light`,
+   `dark`, `dracula`, `nord`, `solarized`, `gruvbox`), and the class `dark`
+   for every theme but `light`.
+
+   A theme is a set of colors: the variables below, and nothing else. The
+   rules which use them are in ui.css, popup.css and options.css, and use the
+   variables in every theme, the light one included.
+
+   The names and the values are those of uMatrixNG (css/themes.css there), so
+   that both extensions look the same side by side, and a theme added to one
+   can be copied to the other as it is. Some are not used here (the matrix);
+   they are kept for that reason.
+
+   To add a theme: one more block of variables here, and its name in
+   theme.js and options.html. */
+
+:root {
+    color-scheme: light;
+    --ng-bg: #fff;
+    --ng-bg-raised: #f4f4f4;
+    --ng-bg-strip: #444;
+    --ng-text: #111;
+    --ng-text-muted: #666;
+    --ng-border: #ccc;
+    --ng-icon: #2b2b2b;
+    --ng-icon-hover: rgba(0, 0, 0, 0.08);
+    --ng-icon-active: rgba(0, 0, 0, 0.16);
+    --ng-accent: #24c;
+    --ng-accent-bg: #24c;
+    --ng-accent-bg-hover: #13a;
+    --ng-accent-bg-deep: #139;
+    --ng-on-accent: #fff;
+    --ng-off: #b00;
+    --ng-scope: #ccc;
+    --ng-scope-hover: #999;
+    --ng-cell-border: rgba(0, 0, 0, 0.2);
+    --ng-allow: #080;
+    --ng-on-allow: #fff;
+    --ng-allow-soft: #d0f0d0;
+    --ng-allow-soft-border: #bad6ba;
+    --ng-on-allow-soft: #000;
+    --ng-allow-hover: #080;
+    --ng-block: #c00;
+    --ng-on-block: #fff;
+    --ng-block-soft: #f8d0d0;
+    --ng-block-soft-border: #debaba;
+    --ng-on-block-soft: #000;
+    --ng-block-hover: #c00;
+    --ng-pending: #e6e6e6;
+    --ng-button: #fff;
+    --ng-button-border: #999;
+    --ng-button-hover: #eee;
+}
+
+:root.dark {
+    color-scheme: dark;
+    /* surfaces and text */
+    --ng-bg: #1f1f1f;
+    --ng-bg-raised: #2a2a2a;
+    --ng-bg-strip: #111;
+    --ng-text: #e0e0e0;
+    --ng-text-muted: #aaa;
+    --ng-border: #444;
+    /* toolbar */
+    --ng-icon: #e0e0e0;
+    --ng-icon-hover: #3a3a3a;
+    --ng-icon-active: #4a4a4a;
+    --ng-accent: #8fb0ff;
+    --ng-accent-bg: #3558d8;
+    --ng-accent-bg-hover: #4a6cf0;
+    --ng-accent-bg-deep: #2440a8;
+    --ng-on-accent: #fff;
+    --ng-off: #ff6b6b;
+    --ng-scope: #555;
+    --ng-scope-hover: #777;
+    /* cells */
+    --ng-cell-border: rgba(255, 255, 255, 0.14);
+    --ng-allow: #0b8a1c;
+    --ng-on-allow: #fff;
+    --ng-allow-soft: #1f432a;
+    --ng-allow-soft-border: #2c5c3a;
+    --ng-on-allow-soft: #dcf0e0;
+    --ng-allow-hover: #35d04a;
+    --ng-block: #c62222;
+    --ng-on-block: #fff;
+    --ng-block-soft: #4a2529;
+    --ng-block-soft-border: #663338;
+    --ng-on-block-soft: #f0dcdc;
+    --ng-block-hover: #ff4a4a;
+    /* status bar */
+    --ng-pending: #383838;
+    --ng-button: #3a3a3a;
+    --ng-button-border: #777;
+    --ng-button-hover: #4a4a4a;
+}
+
+/* Dracula (draculatheme.com) */
+:root[data-theme="dracula"] {
+    --ng-bg: #282a36;
+    --ng-bg-raised: #343746;
+    --ng-bg-strip: #1e1f29;
+    --ng-text: #f8f8f2;
+    --ng-text-muted: #a9adc4;
+    --ng-border: #44475a;
+    --ng-icon: #f8f8f2;
+    --ng-icon-hover: #44475a;
+    --ng-icon-active: #565a73;
+    --ng-accent: #8be9fd;
+    --ng-accent-bg: #6272a4;
+    --ng-accent-bg-hover: #7485b8;
+    --ng-accent-bg-deep: #4f5d88;
+    --ng-on-accent: #f8f8f2;
+    --ng-off: #ff5555;
+    --ng-scope: #44475a;
+    --ng-scope-hover: #565a73;
+    --ng-cell-border: rgba(248, 248, 242, 0.13);
+    --ng-allow: #50fa7b;
+    --ng-on-allow: #1e1f29;
+    --ng-allow-soft: #2c4a42;
+    --ng-allow-soft-border: #3c6957;
+    --ng-on-allow-soft: #e6ffec;
+    --ng-allow-hover: #50fa7b;
+    --ng-block: #8a5fd6;
+    --ng-on-block: #fff;
+    --ng-block-soft: #3d3563;
+    --ng-block-soft-border: #564a85;
+    --ng-on-block-soft: #ece6ff;
+    --ng-block-hover: #bd93f9;
+    --ng-pending: #343746;
+    --ng-button: #44475a;
+    --ng-button-border: #6272a4;
+    --ng-button-hover: #565a73;
+}
+
+/* Nord (nordtheme.com) */
+:root[data-theme="nord"] {
+    --ng-bg: #2e3440;
+    --ng-bg-raised: #3b4252;
+    --ng-bg-strip: #242933;
+    --ng-text: #e5e9f0;
+    --ng-text-muted: #aab4c6;
+    --ng-border: #4c566a;
+    --ng-icon: #e5e9f0;
+    --ng-icon-hover: #434c5e;
+    --ng-icon-active: #4c566a;
+    --ng-accent: #88c0d0;
+    --ng-accent-bg: #5e81ac;
+    --ng-accent-bg-hover: #6f93bf;
+    --ng-accent-bg-deep: #4c6c93;
+    --ng-on-accent: #eceff4;
+    --ng-off: #d9727c;
+    --ng-scope: #4c566a;
+    --ng-scope-hover: #5d6880;
+    --ng-cell-border: rgba(229, 233, 240, 0.13);
+    --ng-allow: #a3be8c;
+    --ng-on-allow: #242933;
+    --ng-allow-soft: #3a4a46;
+    --ng-allow-soft-border: #51675b;
+    --ng-on-allow-soft: #e4efdc;
+    --ng-allow-hover: #a3be8c;
+    --ng-block: #b54f5b;
+    --ng-on-block: #fff;
+    --ng-block-soft: #4a3742;
+    --ng-block-soft-border: #694753;
+    --ng-on-block-soft: #f3e0e3;
+    --ng-block-hover: #bf616a;
+    --ng-pending: #3b4252;
+    --ng-button: #434c5e;
+    --ng-button-border: #5d6880;
+    --ng-button-hover: #4c566a;
+}
+
+/* Solarized Dark (ethanschoonover.com/solarized) */
+:root[data-theme="solarized"] {
+    --ng-bg: #002b36;
+    --ng-bg-raised: #073642;
+    --ng-bg-strip: #001f27;
+    --ng-text: #eee8d5;
+    --ng-text-muted: #93a1a1;
+    --ng-border: #1d4b58;
+    --ng-icon: #eee8d5;
+    --ng-icon-hover: #0f4452;
+    --ng-icon-active: #175564;
+    --ng-accent: #2aa198;
+    --ng-accent-bg: #2aa198;
+    --ng-accent-bg-hover: #38b8ae;
+    --ng-accent-bg-deep: #218a82;
+    --ng-on-accent: #002b36;
+    --ng-off: #e8605c;
+    --ng-scope: #1d4b58;
+    --ng-scope-hover: #2c6170;
+    --ng-cell-border: rgba(238, 232, 213, 0.12);
+    --ng-allow: #859900;
+    --ng-on-allow: #001f27;
+    --ng-allow-soft: #173f2b;
+    --ng-allow-soft-border: #2b5c38;
+    --ng-on-allow-soft: #e8efd0;
+    --ng-allow-hover: #a4bb1c;
+    --ng-block: #dc322f;
+    --ng-on-block: #fff;
+    --ng-block-soft: #40272f;
+    --ng-block-soft-border: #60343a;
+    --ng-on-block-soft: #f6dedb;
+    --ng-block-hover: #f2514e;
+    --ng-pending: #073642;
+    --ng-button: #0f4452;
+    --ng-button-border: #586e75;
+    --ng-button-hover: #175564;
+}
+
+/* Gruvbox Dark (github.com/morhetz/gruvbox) */
+:root[data-theme="gruvbox"] {
+    --ng-bg: #282828;
+    --ng-bg-raised: #3c3836;
+    --ng-bg-strip: #1d2021;
+    --ng-text: #ebdbb2;
+    --ng-text-muted: #a89984;
+    --ng-border: #504945;
+    --ng-icon: #ebdbb2;
+    --ng-icon-hover: #504945;
+    --ng-icon-active: #665c54;
+    --ng-accent: #fe8019;
+    --ng-accent-bg: #fe8019;
+    --ng-accent-bg-hover: #ff9a45;
+    --ng-accent-bg-deep: #d65d0e;
+    --ng-on-accent: #1d2021;
+    --ng-off: #fb4934;
+    --ng-scope: #504945;
+    --ng-scope-hover: #665c54;
+    --ng-cell-border: rgba(235, 219, 178, 0.13);
+    --ng-allow: #b8bb26;
+    --ng-on-allow: #1d2021;
+    --ng-allow-soft: #3b3e25;
+    --ng-allow-soft-border: #585c30;
+    --ng-on-allow-soft: #eff1cb;
+    --ng-allow-hover: #b8bb26;
+    --ng-block: #cc241d;
+    --ng-on-block: #fff;
+    --ng-block-soft: #4a2b27;
+    --ng-block-soft-border: #6c3932;
+    --ng-on-block-soft: #f6ddd6;
+    --ng-block-hover: #fb4934;
+    --ng-pending: #3c3836;
+    --ng-button: #504945;
+    --ng-button-border: #665c54;
+    --ng-button-hover: #665c54;
+}

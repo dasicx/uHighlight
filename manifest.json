@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "uHighlight",
+  "version": "1.1.0",
+  "description": "Highlight the words that matter on every page. Lists for each site, every match in one panel, and what's new since you last looked.",
+  "homepage_url": "https://dasicx.com/uhighlight.html",
+  "minimum_chrome_version": "119",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting",
+    "contextMenus",
+    "activeTab",
+    "sidePanel"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    },
+    "default_popup": "popup.html",
+    "default_title": "uHighlight"
+  },
+  "side_panel": {
+    "default_path": "panel.html"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "commands": {
+    "toggle-site": {
+      "suggested_key": {
+        "default": "Alt+Shift+H"
+      },
+      "description": "Turn highlighting on/off for the current site"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

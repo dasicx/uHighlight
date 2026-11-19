@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>uHighlight — Results</title>
+    <link rel="stylesheet" href="themes.css">
+    <link rel="stylesheet" href="ui.css">
+    <link rel="stylesheet" href="panel.css">
+    <script src="theme.js"></script>
+</head>
+<body>
+    <div class="paneHead">
+        <div class="strip">uHighlight <span class="version"></span> · Results</div>
+        <div class="toolbar">
+            <div class="page">
+                <div class="page-title" id="pageTitle">&nbsp;</div>
+                <div class="page-totals" id="pageTotals"></div>
+            </div>
+            <button type="button" id="refresh" class="fa-icon icon-button" title="Read the page again" aria-label="Refresh">refresh</button>
+        </div>
+        <div class="filters">
+            <select id="wordFilter" class="field" aria-label="Show matches of"></select>
+            <label class="switch-label" title="Only the matches you haven't marked as reviewed on this page">
+                <input type="checkbox" id="newOnly" class="switch"> New only
+            </label>
+            <button type="button" id="markAll" class="btn" title="Mark every match on this page as reviewed"><span class="fa-icon">check</span>All reviewed</button>
+        </div>
+    </div>
+
+    <main id="results" aria-live="polite"></main>
+    <div class="empty" id="empty" hidden></div>
+
+    <div class="footer" id="footer">
+        <label class="select-all"><input type="checkbox" id="selectAll" class="cell"> All</label>
+        <span class="footer-status" id="status" role="status"></span>
+        <button type="button" id="markSelected" class="btn" disabled title="Mark the selected matches as reviewed"><span class="fa-icon">check</span>Reviewed</button>
+        <button type="button" id="copySelected" class="btn primary" disabled title="Copy the selected matches, each with a link to its place on the page"><span class="fa-icon">copy</span>Copy</button>
+    </div>
+
+    <script src="shared.js"></script>
+    <script src="ui.js"></script>
+    <script src="panel.js"></script>
+</body>
+</html>

@@ -1,0 +1,648 @@
+/* uHighlight popup, drawn as the popup of uMatrixNG: the dark strip with the name,
+   a toolbar with the site in a "scope" pill and round icon buttons, rows parted by dotted
+   lines which light up under the pointer, and a status bar at the bottom. The colors are
+   the variables of themes.css. */
+
+/* The popup is 380px wide, plus room kept for the scroll bar: when the list grows taller than
+   the popup, the scroll bar takes that room, not part of the content (which would then be
+   cut on the right). */
+html {
+    scrollbar-gutter: stable;
+}
+body {
+    font-size: 14px;
+    line-height: 1.3;
+    min-height: 200px;
+    width: 380px;
+}
+
+/* Head: the strip, then the toolbar. Stays at the top when the list scrolls. */
+.paneHead {
+    background-color: var(--ng-bg);
+    border-bottom: 1px solid var(--ng-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+#gotoDashboard {
+    background-color: var(--ng-bg-strip);
+    color: #bbb;
+    display: block;
+    font-family: sans-serif;
+    font-size: 12px;
+    line-height: 12px;
+    padding: 3px 0;
+    text-align: center;
+    text-decoration: none;
+}
+:root.dark #gotoDashboard {
+    color: var(--ng-text-muted);
+}
+#gotoDashboard:hover {
+    color: #fff;
+}
+#gotoDashboard .version {
+    font-size: 10px;
+}
+#toolbarContainer {
+    align-items: stretch;
+    display: flex;
+    gap: 6px;
+    justify-content: space-between;
+    padding: 4px 3px 4px 4px;
+}
+.toolbar {
+    align-items: center;
+    display: inline-flex;
+    gap: 1px;
+}
+.toolbar-site {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.toolbar .icon-button {
+    font-size: 125%;
+}
+#buttonOptions[aria-expanded="true"] {
+    background-color: var(--ng-icon-active);
+}
+
+/* The site: as the scope of uMatrixNG, blue when highlighting runs on it */
+.scope {
+    align-items: center;
+    background-color: var(--ng-scope);
+    border-radius: 6px;
+    box-sizing: border-box;
+    color: var(--ng-text);
+    cursor: pointer;
+    display: flex;
+    flex: 1 1 auto;
+    gap: 0.5em;
+    height: 2.25em;
+    min-width: 0;
+    padding: 0 0.7em;
+    transition: background-color 0.12s;
+    user-select: none;
+}
+.scope:hover {
+    background-color: var(--ng-scope-hover);
+}
+.scope:has(> input:checked) {
+    background-color: var(--ng-accent-bg);
+    color: var(--ng-on-accent);
+}
+.scope:has(> input:checked):hover {
+    background-color: var(--ng-accent-bg-hover);
+}
+.scope:has(> input:disabled) {
+    cursor: default;
+    opacity: 0.6;
+}
+.scope:has(> input:disabled):hover {
+    background-color: var(--ng-scope);
+}
+.scope:has(> input:checked:disabled):hover {
+    background-color: var(--ng-accent-bg);
+}
+.scope > .fa-icon {
+    flex: none;
+    opacity: 0.75;
+}
+#currentDomain {
+    flex: 1 1 auto;
+    font-size: 15px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.scope-state {
+    flex: none;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    opacity: 0.8;
+}
+.scope-state::after {
+    content: 'OFF';
+}
+.scope:has(> input:checked) .scope-state::after {
+    content: 'ON';
+}
+.scope:has(> input:disabled:not(:checked)) .scope-state::after {
+    content: '';
+}
+
+/* Messages */
+.notice {
+    border-left: 3px solid var(--ng-accent-bg);
+    font-size: 13px;
+    margin: 8px 8px 0;
+    padding: 6px 8px;
+}
+.notice-error {
+    background-color: var(--ng-block-soft);
+    border-left-color: var(--ng-block);
+    color: var(--ng-on-block-soft);
+}
+
+/* Adding a word */
+.addPane {
+    border-bottom: 1px solid var(--ng-border);
+    padding: 8px 8px 9px;
+}
+.input-group {
+    display: flex;
+    gap: 6px;
+}
+#wordInput {
+    flex: 1 1 auto;
+    font-size: 15px;
+}
+#addWord .fa-icon {
+    font-size: 0.75em;
+}
+
+.color-row {
+    align-items: center;
+    display: flex;
+    gap: 6px;
+    margin-top: 7px;
+}
+.color-label {
+    color: var(--ng-text-muted);
+    flex: none;
+    font-size: 13px;
+    width: 54px;
+}
+
+/* A color: the browser's picker, as a swatch */
+input[type="color"].word-color {
+    background: none;
+    border: 1px solid var(--ng-button-border);
+    border-radius: 4px;
+    box-sizing: border-box;
+    cursor: pointer;
+    flex: none;
+    height: 22px;
+    padding: 2px;
+    width: 26px;
+}
+input[type="color"].word-color::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+input[type="color"].word-color::-webkit-color-swatch {
+    border: 0;
+    border-radius: 2px;
+}
+input[type="color"].word-color:hover {
+    border-color: var(--ng-text);
+}
+
+/* Preset colors */
+.palette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.palette .swatch {
+    border: 1px solid var(--ng-cell-border);
+    border-radius: 4px;
+    cursor: pointer;
+    height: 20px;
+    padding: 0;
+    transition: transform 0.08s;
+    width: 20px;
+}
+.palette .swatch:hover {
+    transform: scale(1.12);
+}
+.palette .swatch.selected,
+.text-choice .selected,
+.style-choice button.selected {
+    outline: 2px solid var(--ng-accent);
+    outline-offset: 1px;
+}
+
+/* Text color: Auto, black, white, or a color of one's own */
+.text-choice {
+    align-items: center;
+    display: flex;
+    gap: 5px;
+}
+.text-choice button {
+    background-color: var(--ng-button);
+    border: 1px solid var(--ng-button-border);
+    border-radius: 4px;
+    box-sizing: border-box;
+    color: var(--ng-text);
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    height: 22px;
+    padding: 0 7px;
+}
+.text-choice button:hover {
+    background-color: var(--ng-button-hover);
+}
+.text-choice button.swatch-black,
+.text-choice button.swatch-white {
+    padding: 0;
+    width: 22px;
+}
+.text-choice button.swatch-black {
+    background-color: #000;
+}
+.text-choice button.swatch-white {
+    background-color: #fff;
+}
+
+/* Style: background, underline, wavy underline - each with a sample */
+.style-choice {
+    display: flex;
+    gap: 5px;
+}
+.style-choice button {
+    background-color: var(--ng-bg);
+    border: 1px solid var(--ng-button-border);
+    border-radius: 4px;
+    color: var(--ng-text);
+    cursor: pointer;
+    font: 13px system-ui, 'Segoe UI', Arial, sans-serif;
+    height: 24px;
+    padding: 0 8px;
+}
+.style-choice button:hover {
+    border-color: var(--ng-text);
+}
+.style-sample,
+.preview-word,
+.word-chip {
+    border-radius: 2px;
+    padding: 0 2px;
+}
+
+/* What the word will look like on a page */
+.preview {
+    background-color: var(--ng-bg-raised);
+    border: 1px dotted var(--ng-cell-border);
+    border-radius: 4px;
+    color: var(--ng-text);
+    font: 13px/1.5 system-ui, 'Segoe UI', Arial, sans-serif;
+    margin-top: 8px;
+    overflow: hidden;
+    padding: 4px 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.preview-label {
+    color: var(--ng-text-muted);
+    font-family: var(--wh-font);
+    font-size: 12px;
+    margin-right: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* The words */
+.listHead {
+    align-items: baseline;
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 8px 4px;
+}
+.listTitle {
+    font-size: 17px;
+}
+.listCount,
+.filter-count {
+    color: var(--ng-text-muted);
+    font-size: 12px;
+    white-space: nowrap;
+}
+.filter-row {
+    align-items: center;
+    display: flex;
+    gap: 6px;
+    padding: 0 8px 6px;
+}
+.filter-row > .fa-icon {
+    color: var(--ng-text-muted);
+    font-size: 12px;
+}
+#wordFilter {
+    flex: 1 1 auto;
+    font-size: 13px;
+    padding: 0.2em 0.5em;
+}
+
+.word-list:empty::before {
+    color: var(--ng-text-muted);
+    content: attr(data-empty);
+    display: block;
+    font-size: 13px;
+    padding: 14px 24px 18px;
+    text-align: center;
+}
+.word-item {
+    align-items: center;
+    border-top: 1px dotted var(--ng-border);
+    display: flex;
+    gap: 7px;
+    min-height: 30px;
+    padding: 2px 6px 2px 8px;
+}
+.word-item:hover {
+    background-color: var(--ng-icon-hover);
+}
+.word-item .word-active {
+    height: 16px;
+    width: 16px;
+}
+.word-text {
+    cursor: text;
+    flex: 1 1 auto;
+    font: 13.5px system-ui, 'Segoe UI', Arial, sans-serif;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.word-item .word-color {
+    height: 20px;
+    width: 24px;
+}
+.word-controls {
+    display: flex;
+    flex: none;
+    gap: 1px;
+}
+.word-item:not(.editing) .word-controls .icon-button {
+    font-size: 14px;
+    height: 26px;
+    min-width: 26px;
+    opacity: 0.45;
+}
+.word-item:not(.editing):hover .word-controls .icon-button,
+.word-item:not(.editing) .word-controls .icon-button:focus-visible {
+    opacity: 1;
+}
+.word-controls .icon-button.remove:hover {
+    background-color: var(--ng-block-soft);
+    color: var(--ng-block);
+    fill: var(--ng-block);
+}
+
+.word-item.paused .word-text {
+    opacity: 0.4;
+}
+.word-item.duplicate .word-text {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+.word-item.flash {
+    animation: flash-row 1.2s ease-out;
+}
+@keyframes flash-row {
+    0%, 30% {
+        background-color: var(--ng-allow-soft);
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+/* A word being edited */
+.word-item.editing {
+    background-color: var(--ng-bg-raised);
+    border-left: 3px solid var(--ng-accent-bg);
+    flex-wrap: wrap;
+    gap: 0 6px;
+    padding: 8px 8px 9px 7px;
+}
+.word-item.editing:hover {
+    background-color: var(--ng-bg-raised);
+}
+.edit-text {
+    flex: 1 1 auto;
+}
+.word-item.editing .word-controls {
+    gap: 4px;
+}
+.word-item.editing .color-row,
+.word-item.editing .preview {
+    width: 100%;
+}
+.word-item.editing .preview {
+    background-color: var(--ng-bg);
+}
+.edit-error {
+    color: var(--ng-off);
+    font-size: 12px;
+    margin-top: 5px;
+    width: 100%;
+}
+
+.no-matches {
+    color: var(--ng-text-muted);
+    font-size: 13px;
+    font-style: italic;
+    padding: 12px;
+    text-align: center;
+}
+
+/* Status bar: what just happened, and what to know about the site */
+#statusBar {
+    background-color: var(--ng-bg-raised);
+    border-top: 1px solid var(--ng-border);
+    bottom: 0;
+    font-size: 12.5px;
+    margin-top: 8px;
+    position: sticky;
+    z-index: 50;
+}
+#statusBar:not(:has(> :not([hidden]))) {
+    display: none;
+}
+#statusBar > * {
+    padding: 0.4em 0.7em;
+}
+#statusBar > * + * {
+    border-top: 1px solid var(--ng-border);
+}
+.add-status {
+    background-color: var(--ng-pending);
+    border-left: 3px solid var(--ng-accent-bg);
+    color: var(--ng-text);
+}
+.add-status.error {
+    background-color: var(--ng-block-soft);
+    border-left-color: var(--ng-block);
+    color: var(--ng-on-block-soft);
+}
+.domain-hint {
+    color: var(--ng-text-muted);
+}
+
+/* No lasting access to this site yet */
+.notice-access {
+    align-items: center;
+    background-color: var(--ng-pending);
+    border-left-color: var(--ng-accent-bg);
+    display: flex;
+    gap: 8px;
+}
+.notice-access[hidden] {
+    display: none;
+}
+.notice-access > span {
+    flex: 1 1 auto;
+}
+
+/* The list new words go to, and pasting many */
+#addList {
+    flex: 0 1 auto;
+    max-width: 110px;
+    padding: 0.3em 0.3em;
+}
+.input-group .icon-button {
+    font-size: 15px;
+    height: auto;
+}
+.bulk-pane {
+    margin-top: 7px;
+}
+.bulk-pane textarea {
+    display: block;
+    font: 13px/1.4 var(--wh-mono);
+    resize: vertical;
+    width: 100%;
+}
+.bulk-row {
+    align-items: center;
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+.bulk-colors {
+    align-items: center;
+    color: var(--ng-text-muted);
+    cursor: pointer;
+    display: flex;
+    flex: 1 1 auto;
+    font-size: 12.5px;
+    gap: 6px;
+}
+.bulk-colors .cell {
+    height: 16px;
+    width: 16px;
+}
+
+/* Groups: My words, then each saved list, and whether it runs on this page */
+.group {
+    align-items: center;
+    background-color: var(--ng-bg-raised);
+    border-top: 1px solid var(--ng-border);
+    display: flex;
+    gap: 6px;
+    padding: 5px 6px 5px 8px;
+}
+.group-text {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+}
+.group-name {
+    font-size: 14.5px;
+    font-weight: bold;
+}
+.group-state {
+    color: var(--ng-text-muted);
+    font-size: 11.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.group.runs .group-state {
+    color: var(--ng-allow);
+}
+:root.dark .group.runs .group-state {
+    color: var(--ng-allow-hover);
+}
+.group .icon-button {
+    font-size: 14px;
+    height: 26px;
+    min-width: 26px;
+}
+.group-empty {
+    color: var(--ng-text-muted);
+    font-size: 12.5px;
+    font-style: italic;
+    padding: 6px 8px 8px 31px;
+}
+
+/* Matches on this page */
+.match-pill {
+    background-color: var(--ng-accent-bg);
+    border-radius: 999px;
+    color: var(--ng-on-accent);
+    flex: none;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1.6;
+    min-width: 1.6em;
+    padding: 0 0.45em;
+    text-align: center;
+}
+.match-pill.zero {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px var(--ng-border);
+    color: var(--ng-text-muted);
+    font-weight: normal;
+}
+.match-pill[hidden] {
+    display: none;
+}
+.match-total:not(:empty)::before {
+    content: '· ';
+}
+
+/* What just happened, with Undo */
+.add-status {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+}
+.add-status[hidden] {
+    display: none;
+}
+.add-status > span {
+    flex: 1 1 auto;
+}
+.btn.undo {
+    font-size: 12px;
+    padding: 0.15em 0.6em;
+}
+
+/* The matching options menu */
+#menuOptions .dropdown-menu > ul {
+    width: 260px;
+}
+#menuOptions .dropdown-menu-entry {
+    align-items: flex-start;
+    white-space: normal;
+}
+#menuOptions .switch {
+    font-size: 15px;
+    margin-top: 2px;
+}
+.entry-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.entry-desc {
+    color: var(--ng-text-muted);
+    font-size: 12px;
+}

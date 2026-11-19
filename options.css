@@ -1,0 +1,565 @@
+/* uHighlight settings, drawn as the dashboard of uMatrixNG: the name and flat tabs
+   at the top, the selected one underlined; then groups which are bands under a rule, their
+   title beside their rows. A setting which is on or off is a cell of the matrix (ui.css).
+   The colors are the variables of themes.css. */
+
+body.settingsPage {
+    font-size: 15.5px;
+    line-height: 1.4;
+}
+
+/* The tabs */
+#dashboard-nav {
+    background-color: var(--ng-bg);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+#dashboard-nav-widgets {
+    align-items: stretch;
+    border-bottom: 1px solid var(--ng-border);
+    display: flex;
+    flex-wrap: wrap;
+    font: 15px system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    gap: 2px;
+    padding: 0 12px;
+}
+.brand {
+    align-items: center;
+    display: inline-flex;
+    font-size: 17px;
+    font-weight: 700;
+    gap: 8px;
+    padding: 10px 18px 10px 4px;
+    white-space: nowrap;
+}
+.brand::before {
+    background: url('icons/icon48.png') center / contain no-repeat;
+    content: '';
+    height: 22px;
+    width: 22px;
+}
+.settingsPage .tabButton,
+.settingsPage .tabButton:visited {
+    align-items: center;
+    border-bottom: 2px solid transparent;
+    color: var(--ng-text-muted);
+    display: inline-flex;
+    padding: 10px 14px 8px;
+    position: relative;
+    text-decoration: none;
+    top: 1px;
+    transition: color 0.12s, border-color 0.12s;
+}
+.settingsPage .tabButton:hover {
+    color: var(--ng-text);
+}
+.tabButton:focus-visible {
+    outline: 2px solid var(--ng-accent);
+    outline-offset: -2px;
+}
+.settingsPage .tabButton.selected {
+    border-bottom-color: var(--ng-accent-bg);
+    color: var(--ng-text);
+    font-weight: 600;
+}
+
+/* The panes */
+.settingsPage main.body {
+    max-width: 940px;
+    padding: 4px 24px 72px;
+}
+.settingsPage a {
+    color: var(--ng-accent);
+}
+
+/* A group: its title at the side, its rows beside it, under one rule */
+section.group {
+    border-top: 2px solid var(--ng-text);
+    column-gap: 28px;
+    display: grid;
+    grid-template-columns: 10.5em minmax(0, 1fr);
+    margin-top: 30px;
+}
+.pane > section.group:first-child {
+    margin-top: 18px;
+}
+section.group > h3 {
+    align-self: start;
+    font-size: 19px;
+    font-weight: normal;
+    line-height: 1.2;
+    margin: 0;
+    padding: 12px 0 0;
+    position: sticky;
+    top: 52px;
+}
+section.group > ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+.groupBody {
+    padding: 11px 8px 6px 6px;
+}
+
+/* A row: the cell, then the name of the setting with one line which says what it does;
+   a choice has its control at the end. */
+section.group > ul > li {
+    align-items: flex-start;
+    border-top: 1px dotted var(--ng-border);
+    display: flex;
+    gap: 6px 12px;
+    margin: 0;
+    padding: 11px 8px 11px 6px;
+}
+section.group > ul > li:first-child {
+    border-top: 0;
+}
+section.group > ul > li:hover {
+    background-color: var(--ng-icon-hover);
+}
+li.choice {
+    align-items: center;
+    flex-wrap: wrap;
+    padding-inline-start: 40px;
+}
+li > .text {
+    flex: 1 1 14em;
+    min-width: 0;
+}
+.line {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    min-height: 22px;
+}
+.line > label,
+.line > .label {
+    cursor: pointer;
+    font-size: 16.5px;
+}
+.line > label.plain,
+.line > .label {
+    cursor: default;
+}
+p.desc {
+    color: var(--ng-text-muted);
+    font-size: 14.5px;
+    line-height: 1.4;
+    margin: 1px 0 0;
+    max-width: 74ch;
+}
+.groupBody > p.desc {
+    margin-bottom: 10px;
+}
+.dim {
+    color: var(--ng-text-muted);
+    font-weight: normal;
+}
+.controls {
+    align-items: center;
+    display: inline-flex;
+    gap: 8px;
+}
+select.field {
+    cursor: pointer;
+    min-width: 11em;
+    padding: 4px 6px;
+}
+select.field option {
+    background-color: var(--ng-bg-raised);
+    color: var(--ng-text);
+}
+
+/* Lists of websites */
+.add-site {
+    display: flex;
+    gap: 8px;
+    max-width: 34em;
+}
+.add-site .field {
+    flex: 1 1 auto;
+}
+.form-error {
+    color: var(--ng-off);
+    font-size: 14px;
+    margin-top: 6px;
+}
+.inactive-note {
+    background-color: var(--ng-pending);
+    border-left: 3px solid var(--ng-accent-bg);
+    font-size: 14.5px;
+    margin: 0 0 10px;
+    padding: 6px 10px;
+}
+.group.inactive .site-list,
+.group.inactive .add-site {
+    opacity: 0.55;
+}
+.site-list {
+    list-style: none;
+    margin: 12px 0 0;
+    max-width: 34em;
+    padding: 0;
+}
+.site-list li {
+    align-items: center;
+    border-top: 1px dotted var(--ng-border);
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    min-height: 32px;
+    padding: 0 2px 0 8px;
+}
+.site-list li:first-child {
+    border-top: 1px solid var(--ng-border);
+}
+.site-list li:last-child {
+    border-bottom: 1px dotted var(--ng-border);
+}
+.site-list li:hover {
+    background-color: var(--ng-icon-hover);
+}
+.site-list li.empty {
+    color: var(--ng-text-muted);
+    font-size: 14.5px;
+    font-style: italic;
+    justify-content: flex-start;
+    padding: 6px 8px;
+}
+.site-list li.empty:hover {
+    background-color: transparent;
+}
+.site-name {
+    font-family: var(--wh-mono);
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.site-name .wildcard {
+    color: var(--ng-accent);
+}
+.site-list .icon-button {
+    opacity: 0.45;
+}
+.site-list li:hover .icon-button,
+.site-list .icon-button:focus-visible {
+    opacity: 1;
+}
+.site-list .icon-button:hover {
+    background-color: var(--ng-block-soft);
+    color: var(--ng-block);
+    fill: var(--ng-block);
+}
+
+p.footnote {
+    border-top: 2px solid var(--ng-text);
+    color: var(--ng-text-muted);
+    font-size: 14.5px;
+    margin: 30px 0 0;
+    padding-top: 10px;
+}
+
+.mono {
+    font-family: var(--wh-mono);
+}
+.site-access {
+    color: var(--ng-off);
+    flex: 1 1 auto;
+    font-size: 12.5px;
+    text-align: right;
+}
+
+/* Sites the extension may not read yet */
+.access-notice {
+    align-items: center;
+    background-color: var(--ng-pending);
+    border-left: 3px solid var(--ng-accent-bg);
+    display: flex;
+    font-size: 14.5px;
+    gap: 12px;
+    margin: 0 0 12px;
+    max-width: 34em;
+    padding: 6px 10px;
+}
+.access-notice[hidden] {
+    display: none;
+}
+.access-notice > span {
+    flex: 1 1 auto;
+}
+
+/* Lists: the page tester */
+.test-result {
+    list-style: none;
+    margin: 10px 0 0;
+    max-width: 44em;
+    padding: 0;
+}
+.test-result li {
+    align-items: baseline;
+    border-top: 1px dotted var(--ng-border);
+    display: flex;
+    gap: 10px;
+    padding: 6px 4px;
+}
+.test-result li.empty {
+    color: var(--ng-text-muted);
+    font-style: italic;
+}
+.test-state {
+    border-radius: 2px;
+    flex: none;
+    font-size: 11.5px;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    min-width: 3.4em;
+    padding: 1px 6px;
+    text-align: center;
+    text-transform: uppercase;
+}
+.test-result li.runs .test-state {
+    background-color: var(--ng-allow);
+    color: var(--ng-on-allow);
+}
+.test-result li.off .test-state {
+    background-color: var(--ng-bg-raised);
+    color: var(--ng-text-muted);
+    box-shadow: inset 0 0 0 1px var(--ng-border);
+}
+.test-name {
+    flex: none;
+    font-weight: bold;
+}
+.test-why {
+    color: var(--ng-text-muted);
+    font-size: 14.5px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Lists: a saved list */
+.list-row {
+    border-top: 1px dotted var(--ng-border);
+    column-gap: 16px;
+    display: grid;
+    grid-template-columns: 7.5em minmax(0, 1fr);
+    padding: 9px 0;
+}
+.list-row:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+.list-label {
+    font-size: 15.5px;
+    padding-top: 4px;
+}
+.list-control .field {
+    box-sizing: border-box;
+    max-width: 34em;
+    width: 100%;
+}
+.list-control textarea.field {
+    font: 14px/1.4 var(--wh-mono);
+    resize: vertical;
+}
+.list-control p.desc {
+    margin-top: 4px;
+}
+.inline-check {
+    align-items: center;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 15.5px;
+    gap: 8px;
+    padding-top: 2px;
+}
+.list-actions {
+    display: flex;
+    gap: 8px;
+    padding: 6px 0 12px;
+}
+.list-actions .btn.danger {
+    margin-left: auto;
+}
+.list-words {
+    border-top: 1px dotted var(--ng-border);
+    padding-top: 10px;
+}
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 10px;
+}
+.word-chip {
+    align-items: center;
+    border: 1px solid var(--ng-border);
+    border-radius: 4px;
+    display: inline-flex;
+    font: 14px system-ui, 'Segoe UI', Arial, sans-serif;
+    gap: 2px;
+    padding: 2px 2px 2px 6px;
+}
+.word-chip.paused {
+    opacity: 0.5;
+}
+.chip-text {
+    border-radius: 2px;
+    padding: 0 3px;
+}
+.chip-remove {
+    background: none;
+    border: 0;
+    border-radius: 3px;
+    color: var(--ng-text-muted);
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    padding: 1px 5px;
+}
+.chip-remove:hover {
+    background-color: var(--ng-block-soft);
+    color: var(--ng-block);
+}
+.bulk-add {
+    align-items: flex-start;
+    display: flex;
+    gap: 8px;
+    max-width: 34em;
+}
+.bulk-add textarea {
+    flex: 1 1 auto;
+    font: 14px/1.4 var(--wh-mono);
+    resize: vertical;
+}
+
+/* Import: merge or replace */
+.import-dialog {
+    background-color: var(--ng-bg);
+    border: 1px solid var(--ng-border);
+    border-radius: 8px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+    color: var(--ng-text);
+    max-width: min(640px, calc(100vw - 32px));
+    padding: 18px 22px;
+}
+.import-dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.4);
+}
+.import-dialog h3 {
+    font-size: 19px;
+    font-weight: normal;
+    margin: 0 0 12px;
+}
+.import-dialog h3 .mono {
+    font-size: 15px;
+}
+.import-table {
+    border-collapse: collapse;
+    font-size: 14.5px;
+    width: 100%;
+}
+.import-table th {
+    border-bottom: 2px solid var(--ng-text);
+    font-weight: normal;
+    padding: 4px 8px;
+    text-align: left;
+}
+.import-table td {
+    border-top: 1px dotted var(--ng-border);
+    padding: 6px 8px;
+    vertical-align: top;
+}
+.import-table td:first-child {
+    font-weight: bold;
+}
+.dialog-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+/* About */
+.about > p {
+    margin: 12px 0 0;
+}
+.aboutHead {
+    align-items: center;
+    display: flex;
+    gap: 16px;
+}
+.aboutName {
+    font-size: 22px;
+}
+.aboutName .version {
+    font-size: 15px;
+}
+.contact-link {
+    font-family: var(--wh-mono);
+    font-size: 14px;
+}
+ul.credits > li {
+    color: var(--ng-text-muted);
+    font-size: 14.5px;
+    padding-inline-start: 6px;
+}
+
+/* What just happened: a bar at the bottom, as the status bar of the popup */
+.status {
+    background-color: var(--ng-allow-soft);
+    border: 1px solid var(--ng-allow-soft-border);
+    border-radius: 6px;
+    bottom: 16px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    color: var(--ng-on-allow-soft);
+    font-size: 14.5px;
+    left: 50%;
+    max-width: min(640px, calc(100vw - 32px));
+    padding: 8px 14px;
+    position: fixed;
+    transform: translateX(-50%);
+    width: max-content;
+    z-index: 20;
+}
+.status:not([hidden]) {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+}
+.status .btn.undo {
+    font-size: 13px;
+    padding: 0.15em 0.7em;
+}
+.status.error {
+    background-color: var(--ng-block-soft);
+    border-color: var(--ng-block-soft-border);
+    color: var(--ng-on-block-soft);
+}
+
+/* Not wide: the title of a group above its rows */
+@media (max-width: 680px) {
+    .settingsPage main.body {
+        padding: 4px 12px 72px;
+    }
+    section.group {
+        display: block;
+    }
+    section.group > h3 {
+        padding: 10px 0 4px;
+        position: static;
+    }
+    li.choice {
+        padding-inline-start: 6px;
+    }
+    .brand {
+        padding-right: 8px;
+    }
+    .tabButton {
+        padding: 10px 8px 8px;
+    }
+}

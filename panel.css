@@ -1,0 +1,217 @@
+/* uHighlight results panel, in the browser's side panel: drawn as the popup (uMatrixNG's look),
+   with the matches of the page as rows parted by dotted lines. */
+
+html,
+body {
+    height: 100%;
+}
+body {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    line-height: 1.35;
+    min-width: 260px;
+}
+
+.paneHead {
+    background-color: var(--ng-bg);
+    border-bottom: 1px solid var(--ng-border);
+    flex: none;
+}
+.strip {
+    background-color: var(--ng-bg-strip);
+    color: #bbb;
+    font: 12px/12px sans-serif;
+    padding: 3px 0;
+    text-align: center;
+}
+:root.dark .strip {
+    color: var(--ng-text-muted);
+}
+.strip .version {
+    font-size: 10px;
+}
+.toolbar {
+    align-items: center;
+    display: flex;
+    gap: 6px;
+    padding: 6px 6px 4px 10px;
+}
+.page {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.page-title {
+    font-size: 15px;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.page-totals {
+    color: var(--ng-text-muted);
+    font-size: 12.5px;
+}
+.page-totals .new {
+    color: var(--ng-accent);
+    font-weight: bold;
+}
+.toolbar .icon-button {
+    font-size: 125%;
+}
+.filters {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    padding: 2px 10px 8px;
+}
+#wordFilter {
+    flex: 1 1 120px;
+    font-size: 13px;
+    min-width: 0;
+    padding: 0.25em 0.4em;
+}
+.switch-label {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    font-size: 13px;
+    gap: 6px;
+    white-space: nowrap;
+}
+.switch-label .switch {
+    font-size: 14px;
+}
+.filters .btn,
+.footer .btn {
+    font-size: 12.5px;
+    padding: 0.2em 0.7em;
+}
+
+/* The matches */
+main {
+    flex: 1 1 auto;
+    overflow-y: auto;
+}
+.heading {
+    background-color: var(--ng-bg-raised);
+    border-top: 1px solid var(--ng-border);
+    color: var(--ng-text-muted);
+    font-size: 12.5px;
+    font-weight: bold;
+    overflow: hidden;
+    padding: 5px 10px;
+    position: sticky;
+    text-overflow: ellipsis;
+    top: 0;
+    white-space: nowrap;
+    z-index: 1;
+}
+.heading .frame {
+    font-weight: normal;
+}
+.match {
+    align-items: flex-start;
+    border-top: 1px dotted var(--ng-border);
+    display: flex;
+    gap: 8px;
+    padding: 6px 10px 6px 10px;
+}
+.match:hover {
+    background-color: var(--ng-icon-hover);
+}
+.match .cell {
+    height: 16px;
+    margin-top: 2px;
+    width: 16px;
+}
+.snippet {
+    color: var(--ng-text);
+    cursor: pointer;
+    flex: 1 1 auto;
+    font: 13px/1.45 system-ui, 'Segoe UI', Arial, sans-serif;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.snippet .context {
+    color: var(--ng-text-muted);
+}
+.snippet .chip {
+    border-radius: 2px;
+    padding: 0 2px;
+}
+.snippet:focus-visible {
+    outline: 2px solid var(--ng-accent);
+    outline-offset: 1px;
+}
+.match .state {
+    flex: none;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.04em;
+    margin-top: 2px;
+    text-transform: uppercase;
+}
+.match.new .state {
+    color: var(--ng-accent);
+}
+.match.new .state::after {
+    content: 'new';
+}
+.match.reviewed .snippet {
+    opacity: 0.6;
+}
+.match.reviewed .state {
+    color: var(--ng-allow);
+    fill: var(--ng-allow);
+}
+:root.dark .match.reviewed .state {
+    color: var(--ng-allow-hover);
+    fill: var(--ng-allow-hover);
+}
+
+.empty {
+    color: var(--ng-text-muted);
+    flex: 1 1 auto;
+    font-size: 13.5px;
+    padding: 24px 20px;
+    text-align: center;
+}
+.empty .btn {
+    margin-top: 10px;
+}
+
+/* Selection: copy, mark as reviewed */
+.footer {
+    align-items: center;
+    background-color: var(--ng-bg-raised);
+    border-top: 1px solid var(--ng-border);
+    display: flex;
+    flex: none;
+    gap: 8px;
+    padding: 6px 10px;
+}
+.select-all {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    font-size: 13px;
+    gap: 6px;
+}
+.select-all .cell {
+    height: 16px;
+    width: 16px;
+}
+.footer-status {
+    color: var(--ng-text-muted);
+    flex: 1 1 auto;
+    font-size: 12.5px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.footer-status.error {
+    color: var(--ng-off);
+}
