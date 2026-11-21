@@ -161,7 +161,9 @@ class SettingsPage {
         });
         document.getElementById('myWordsAdd').addEventListener('click', () => {
             const area = document.getElementById('myWordsBulk');
-            if (this.addWords('', area.value)) area.value = '';
+            const text = area.value;
+            area.value = '';
+            if (!this.addWords('', text, area.id)) area.value = text;
         });
 
         // Chrome owns keyboard shortcuts; its own page is where they're changed
@@ -198,6 +200,7 @@ class SettingsPage {
         this.renderList('excludedList', 'excludedDomains', 'No excluded websites.');
         document.getElementById('myWordsCount').textContent =
             `${plural(this.settings.words.length, 'word')}. They run wherever highlighting is on for the site (see Websites).`;
+        this.renderMyWords();
         if (listsChanged) this.renderLists();
         if (document.getElementById('testUrl').value.trim()) this.renderTest();
         this.updateAccess();
@@ -308,11 +311,85 @@ class SettingsPage {
 
     // ---------------------------------------------------------------- saved lists
 
+    // Draws the cards again. A field edited but not saved yet (a name, the addresses, the
+    // section, the storage box, words to add) keeps what was typed: the cards are redrawn
+    // after any change of a list (a word removed, a color changed, a save that failed and was
+    // taken back). The card being saved shows what was saved instead (a name is trimmed, an
+    // address tidied up), so that a later change made elsewhere shows too.
     renderLists() {
         const container = document.getElementById('lists');
+        const drafts = this.listDrafts().filter(d => !this.savingList || !d.id.startsWith(`list-${this.savingList}-`) ||
+            d.id.endsWith('-add'));
         container.textContent = '';
         this.settings.lists.forEach(list => container.appendChild(this.buildListCard(list)));
         document.getElementById('noLists').hidden = this.settings.lists.length > 0;
+        drafts.forEach(({ id, value, focused, selection }) => {
+            const field = document.getElementById(id);
+            if (!field) return;   // the list is gone
+            // (its data-drawn stays the stored value: once that is saved, it's no draft anymore)
+            if (field.type === 'checkbox') field.checked = value; else field.value = value;
+            if (focused) {
+                field.focus();
+                if (selection) field.setSelectionRange(selection[0], selection[1]);
+            }
+        });
+    }
+
+    // Counts the saves which send a field: a failed one gives back what it sent only when it
+    // is the field's latest (see the Save of a list)
+    noteFieldSave(id) {
+        if (!this.fieldSaves) this.fieldSaves = new Map();
+        const n = (this.fieldSaves.get(id) || 0) + 1;
+        this.fieldSaves.set(id, n);
+        return n;
+    }
+
+    // Puts back what was typed in a field, once the stored settings are shown again after a
+    // save which failed (see trackSave()). `prepend` (words to add): the batches which failed
+    // all come back, before what has been typed there since. Otherwise what was typed again
+    // since the save wins over what that save sent, and so does a later save of the field
+    // (`send`: the noteFieldSave() of the save which failed).
+    keepDraft(id, value, { prepend = false, send = null } = {}) {
+        if (!this.pendingDrafts) this.pendingDrafts = new Map();
+        const earlier = this.pendingDrafts.get(id);
+        if (prepend && earlier) value = earlier.value.replace(/\s+$/, '') + '\n' + value;
+        this.pendingDrafts.set(id, { value, prepend, send });
+    }
+
+    applyPendingDrafts() {
+        if (!this.pendingDrafts || this.pendingSaves > 0) return;
+        this.pendingDrafts.forEach(({ value, prepend, send }, id) => {
+            const field = document.getElementById(id);
+            if (!field) return;   // its list is gone
+            // Saved again since the save which failed: that one is newer
+            if (send !== null && this.fieldSaves && this.fieldSaves.get(id) !== send) return;
+            if (prepend) {
+                field.value = field.value.trim() ? value.replace(/\s+$/, '') + '\n' + field.value : value;
+                return;
+            }
+            // Edited again meanwhile (it differs from the stored value it was drawn with)
+            const current = field.type === 'checkbox' ? String(field.checked) : field.value;
+            if (field.dataset.drawn !== undefined && current !== field.dataset.drawn) return;
+            if (field.type === 'checkbox') field.checked = value; else field.value = value;
+        });
+        this.pendingDrafts = null;
+    }
+
+    // The fields of the cards which differ from what they were drawn with
+    listDrafts() {
+        const drafts = [];
+        document.querySelectorAll('#lists [data-drawn]').forEach(field => {
+            const value = field.type === 'checkbox' ? field.checked : field.value;
+            const drawn = field.type === 'checkbox' ? field.dataset.drawn === 'true' : field.dataset.drawn;
+            if (value === drawn) return;
+            drafts.push({
+                id: field.id,
+                value,
+                focused: document.activeElement === field,
+                selection: field.type === 'checkbox' ? null : [field.selectionStart, field.selectionEnd]
+            });
+        });
+        return drafts;
     }
 
     buildListCard(list) {
@@ -386,6 +463,9 @@ class SettingsPage {
         local.className = 'cell';
         local.id = id('local');
         local.checked = list.local;
+        // What they were drawn with: an edit not saved yet survives a redraw (see renderLists())
+        [name, urls, sectionInput].forEach(field => { field.dataset.drawn = field.value; });
+        local.dataset.drawn = String(local.checked);
         const localBox = document.createElement('label');
         localBox.className = 'inline-check';
         localBox.append(local, document.createTextNode(' On this device only'));
@@ -408,6 +488,13 @@ class SettingsPage {
                 return;
             }
             const sel = sectionInput.value.trim();
+            if (sel.length > Shared.MAX_SECTION) {
+                error.textContent = `The section is too long: ${sel.length} characters, at most ${Shared.MAX_SECTION}. ` +
+                    'Shorten the selector, or pick a smaller part of the page.';
+                error.hidden = false;
+                sectionInput.classList.add('invalid');
+                return;
+            }
             if (sel) {
                 try {
                     document.createDocumentFragment().querySelector(sel);
@@ -425,13 +512,59 @@ class SettingsPage {
             // Ask for the sites of the patterns (right in the click handler)
             const origins = Array.from(new Set(normalized.flatMap(p => Shared.originsFor(p))));
             if (origins.length > 0) this.requestAccess(origins);
-            if (this.change({
-                type: 'updateList',
-                id: list.id,
-                patch: { name: name.value, urls: normalized, section: sel, local: local.checked }
-            })) {
-                this.showStatus(`Saved "${name.value.trim() || 'List'}".`);
+            // Only the fields edited here are sent: the others keep what they are when the
+            // change is made, which another page may have just changed. (Each is compared
+            // with what the card was drawn with.)
+            const patch = {};
+            const typed = {};
+            // (spaces around or inside a name aren't kept: only a different name is a rename)
+            const cleanName = name.value.trim().replace(/\s+/g, ' ');
+            if (!cleanName) {
+                error.textContent = 'Give the list a name.';
+                error.hidden = false;
+                name.classList.add('invalid');
+                return;
             }
+            name.classList.remove('invalid');
+            if (cleanName !== name.dataset.drawn) {
+                patch.name = cleanName;
+                typed[name.id] = name.value;
+            }
+            if (normalized.join('\n') !== urls.dataset.drawn) {
+                patch.urls = normalized;
+                typed[urls.id] = urls.value;
+            }
+            if (sel !== sectionInput.dataset.drawn) {
+                patch.section = sel;
+                typed[sectionInput.id] = sectionInput.value;
+            }
+            if (String(local.checked) !== local.dataset.drawn) {
+                patch.local = local.checked;
+                typed[local.id] = local.checked;
+            }
+            const changed = Object.keys(patch).length > 0;
+            // Not stored after all: what was typed comes back, to save again. Not a field
+            // which a later save has sent since: that one is newer (and may have been stored).
+            const sends = {};
+            Object.keys(typed).forEach(id => { sends[id] = this.noteFieldSave(id); });
+            const giveBack = () => Object.entries(typed).forEach(([id, value]) => {
+                if (this.fieldSaves.get(id) === sends[id]) this.keepDraft(id, value, { send: sends[id] });
+            });
+            const savedName = (changed && patch.name !== undefined ? patch.name : list.name).trim() || 'List';
+            // The card shows what is saved (a name trimmed, addresses tidied up: see
+            // renderLists()), even when that is what it had already
+            this.savingList = list.id;
+            let done;
+            try {
+                done = !changed || this.change(
+                    { type: 'updateList', id: list.id, patch },
+                    // Not stored after all: what was typed stays, to save again
+                    { onFailure: giveBack });
+                this.renderLists();
+            } finally {
+                this.savingList = null;
+            }
+            if (done) this.showStatus(changed ? `Saved "${savedName}".` : 'Nothing to save: no changes.');
         });
 
         const remove = document.createElement('button');
@@ -472,35 +605,7 @@ class SettingsPage {
         const head = document.createElement('div');
         head.className = 'list-label';
         head.textContent = `Words (${list.words.length})`;
-        const chips = document.createElement('div');
-        chips.className = 'chips';
-        if (list.words.length === 0) {
-            const empty = document.createElement('span');
-            empty.className = 'dim';
-            empty.textContent = 'No words yet.';
-            chips.appendChild(empty);
-        }
-        list.words.forEach(word => {
-            const chip = document.createElement('span');
-            chip.className = 'word-chip' + (word.paused ? ' paused' : '');
-            const label = document.createElement('span');
-            label.className = 'chip-text';
-            label.textContent = word.text;
-            Shared.highlightDeclarations(word).forEach(([property, value]) => label.style.setProperty(property, value));
-            const remove = document.createElement('button');
-            remove.type = 'button';
-            remove.className = 'chip-remove';
-            remove.textContent = '×';
-            remove.title = `Remove "${word.text}"`;
-            remove.setAttribute('aria-label', remove.title);
-            remove.addEventListener('click', () => {
-                if (this.change({ type: 'removeWord', list: list.id, text: word.text }, { undo: true })) {
-                    this.showStatus(`Removed "${word.text}".`, { undo: true });
-                }
-            });
-            chip.append(label, remove);
-            chips.appendChild(chip);
-        });
+        const chips = this.buildChips(list.id, list.words);
 
         const area = document.createElement('textarea');
         area.className = 'field';
@@ -511,8 +616,14 @@ class SettingsPage {
         add.type = 'button';
         add.className = 'btn';
         add.append(UI.icon('plus'), document.createTextNode('Add words'));
+        // Words typed here survive the card being drawn again (see renderLists())
+        area.id = `list-${list.id}-add`;
+        area.dataset.drawn = '';
         add.addEventListener('click', () => {
-            if (this.addWords(list.id, area.value)) area.value = '';
+            // Emptied first: adding draws the card again, which would keep them as typed
+            const text = area.value;
+            area.value = '';
+            if (!this.addWords(list.id, text, area.id)) area.value = text;
         });
         const addRow = document.createElement('div');
         addRow.className = 'bulk-add';
@@ -522,20 +633,104 @@ class SettingsPage {
         return block;
     }
 
+    // The words of a list ('' = My words), shown as on a page: each with its highlight color
+    // (a click on the square changes it) and a remove button.
+    buildChips(listId, words) {
+        const chips = document.createElement('div');
+        chips.className = 'chips';
+        if (words.length === 0) {
+            const empty = document.createElement('span');
+            empty.className = 'dim';
+            empty.textContent = 'No words yet.';
+            chips.appendChild(empty);
+        }
+        const paint = (label, word) => {
+            label.style.cssText = '';
+            Shared.highlightDeclarations(word).forEach(([property, value]) => label.style.setProperty(property, value));
+        };
+        words.forEach(word => {
+            const chip = document.createElement('span');
+            chip.className = 'word-chip' + (word.paused ? ' paused' : '');
+            chip.title = word.paused ? `${word.text} (paused)` : word.text;
+
+            const color = document.createElement('input');
+            color.type = 'color';
+            color.className = 'chip-color';
+            color.value = word.color;
+            color.title = `Change the highlight color of "${word.text}"`;
+            color.setAttribute('aria-label', color.title);
+
+            const label = document.createElement('span');
+            label.className = 'chip-text';
+            label.textContent = word.text;
+            paint(label, word);
+
+            // Shown while picking, saved once the picker closes
+            color.addEventListener('input', () => paint(label, { ...word, color: color.value }));
+            color.addEventListener('change', () => {
+                const value = color.value.toLowerCase();
+                if (value === String(word.color).toLowerCase()) return;
+                // Not redrawn: the other fields of the list may hold unsaved edits
+                if (this.change({ type: 'setWordColor', list: listId, text: word.text, color: value }, { redraw: false })) {
+                    word = { ...word, color: value };
+                    // The chips already show it: don't draw them again later, which would take
+                    // the keyboard focus away from this square
+                    if (!listId) this.renderedWords = JSON.stringify(this.settings.words);
+                }
+            });
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'chip-remove';
+            remove.textContent = '×';
+            remove.title = `Remove "${word.text}"`;
+            remove.setAttribute('aria-label', remove.title);
+            remove.addEventListener('click', () => {
+                if (this.change({ type: 'removeWord', list: listId, text: word.text }, { undo: true })) {
+                    this.showStatus(`Removed "${word.text}".`, { undo: true });
+                }
+            });
+            chip.append(color, label, remove);
+            chips.appendChild(chip);
+        });
+        return chips;
+    }
+
+    // My words, as chips. Drawn again only when they changed (not while a color is picked).
+    renderMyWords() {
+        const key = JSON.stringify(this.settings.words);
+        if (key === this.renderedWords) return;
+        this.renderedWords = key;
+        const chips = this.buildChips('', this.settings.words);
+        chips.id = 'myWordsChips';
+        document.getElementById('myWordsChips').replaceWith(chips);
+    }
+
     // Adds pasted words (one per line) to a list ('' = My words). Returns true when added.
-    addWords(list, text) {
-        const lines = Array.from(new Set(listOfLines(text))).slice(0, MAX_BULK);
+    // `fieldId`: the box they were typed in, which gets them back if they aren't stored.
+    // At most MAX_BULK at once: the others stay in the box, to add next.
+    addWords(list, text, fieldId = null) {
+        const all = Array.from(new Set(listOfLines(text)));
+        const lines = all.slice(0, MAX_BULK);
+        const rest = all.slice(MAX_BULK);
         if (lines.length === 0) {
             this.showStatus('Type or paste words first, one per line.', { error: true });
             return false;
         }
         const words = () => list ? (this.settings.lists.find(l => l.id === list) || { words: [] }).words : this.settings.words;
         const before = words().length;
-        if (!this.change({ type: 'addWords', list, texts: lines, look: {}, cycleColors: true }, { undo: true })) return false;
+        const onFailure = fieldId ? () => this.keepDraft(fieldId, lines.join('\n'), { prepend: true }) : null;
+        if (!this.change({ type: 'addWords', list, texts: lines, look: {}, cycleColors: true }, { undo: true, onFailure })) return false;
+        const field = fieldId && document.getElementById(fieldId);
+        if (rest.length > 0 && field) {
+            field.value = rest.join('\n') + (field.value.trim() ? '\n' + field.value : '');
+        }
         const added = words().length - before;
-        this.showStatus(added === lines.length
+        const left = rest.length > 0 ? ` ${plural(rest.length, 'more word')} (over ${MAX_BULK} at once) ${rest.length === 1 ? 'is' : 'are'} still in the box: add ${rest.length === 1 ? 'it' : 'them'} next.` : '';
+        this.showStatus((added === lines.length
             ? `Added ${plural(added, 'word')}.`
-            : `Added ${plural(added, 'word')}; ${lines.length - added} ${lines.length - added === 1 ? 'was' : 'were'} already in the list.`, { undo: added > 0 });
+            : `Added ${plural(added, 'word')}; ${lines.length - added} ${lines.length - added === 1 ? 'was' : 'were'} already in the list.`) + left,
+            { undo: added > 0 });
         return true;
     }
 
@@ -600,9 +795,11 @@ class SettingsPage {
     // Shows a change at once (applied to our copy), and hands it to the background worker,
     // which makes it on the *latest stored* settings: a site added in the popup a moment ago
     // isn't lost, and closing this tab can't cancel a change it has already shown.
-    // `undo`: keep the change which undoes this one, for the Undo button. Returns false when the change
-    // can't be made (the reason is shown).
-    change(change, { undo = false } = {}) {
+    // `undo`: keep the change which undoes this one, for the Undo button. `redraw: false`: the
+    // page already shows it. `onFailure`: called when it isn't stored after all (before the
+    // stored settings are shown again). Returns false when the change can't be made (the
+    // reason is shown).
+    change(change, { undo = false, redraw = true, onFailure = null } = {}) {
         const before = JSON.parse(JSON.stringify(this.settings));
         const mine = Shared.sanitizeSettings(JSON.parse(JSON.stringify(this.settings)));
         let values;
@@ -624,18 +821,18 @@ class SettingsPage {
         }
         const listsChanged = JSON.stringify(mine.lists) !== JSON.stringify(this.settings.lists);
         this.settings = mine;
-        this.render(listsChanged);
+        if (redraw) this.render(listsChanged);
         this.lastSave = this.trackSave(() => Shared.commit(change).then(result => {
             if (token && token === this.undoToken) {
                 this.undoChange = result.inverse;
                 document.getElementById('undoButton').hidden = !(this.statusWantsUndo && this.undoChange);
             }
             return result;
-        }));
+        }), onFailure);
         return true;
     }
 
-    async trackSave(write) {
+    async trackSave(write, onFailure = null) {
         this.pendingSaves++;
         let saved = true;
         try {
@@ -644,6 +841,10 @@ class SettingsPage {
             // e.g. the 100 KB total chrome.storage.sync quota
             this.showStatus('Could not save settings: ' + error.message, { error: true });
             saved = false;
+            // Read the stored settings again once all saves are done, even if a later one
+            // succeeds: our copy still shows this one
+            this.resyncAfterSave = true;
+            if (onFailure) onFailure();
         }
         this.pendingSaves--;
         if (this.pendingSaves === 0 && (this.resyncAfterSave || !saved)) {
@@ -651,6 +852,7 @@ class SettingsPage {
             this.resyncAfterSave = false;
             await this.resync();
         }
+        this.applyPendingDrafts();
         return saved;
     }
 

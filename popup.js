@@ -13,6 +13,8 @@ const FILTER_MIN_WORDS = 6;
 const MAX_BULK = 500;
 // How long "Undo" is offered after a removal
 const UNDO_MS = 12000;
+// The lists folded in the popup ('' = My words), kept in this browser's localStorage
+const COLLAPSED_KEY = 'collapsedLists';
 
 const STYLES = [
     { value: 'background', name: 'Background' },
@@ -52,6 +54,7 @@ class Popup {
         this.editDraft = null;
         this.filterText = '';
         this.pendingSaves = 0;
+        this.collapsed = this.loadCollapsed();
         this.init();
     }
 
@@ -176,6 +179,7 @@ class Popup {
         this.updateOptionsUI();
         this.updateDomainUI();
         this.updateListChoice();
+        this.drawUnsaved();
         if (wordsChanged || !this.editing) this.updateWordList();
         else this.updateCounts();
     }
@@ -409,6 +413,7 @@ class Popup {
         });
         document.getElementById('addList').addEventListener('change', e => {
             this.addListId = e.target.value;
+            this.updateListChoice();
         });
 
         document.getElementById('openBulk').addEventListener('click', () => this.openBulk(''));
@@ -503,12 +508,15 @@ class Popup {
             this.addPreview.update(wordInput.value, look);
             this.addTextChoice.refresh();
             this.addStyleChoice.refresh();
+            this.addCode.refresh();
         };
 
         colorPicker.value = this.nextPresetColor();
         const palette = this.buildPalette(colorPicker, updatePreview);
         container.replaceWith(palette);
         palette.id = 'palette';
+        this.addCode = this.buildColorCode(colorPicker, 'Highlight color code');
+        colorPicker.after(this.addCode.element);
 
         this.addTextChoice = this.buildTextColorChoice(
             null, () => colorPicker.value, updatePreview,
@@ -529,22 +537,59 @@ class Popup {
         updatePreview();
     }
 
-    // The list new words go to: shown when there are saved lists
+    // The list new words go to: shown when there are saved lists. A list deleted meanwhile
+    // (on the Settings page) while words for it are in the boxes stays chosen, marked as
+    // deleted, rather than the words silently going to My words: Add asks for another one.
     updateListChoice() {
         const select = document.getElementById('addList');
         const lists = this.settings.lists;
-        select.hidden = lists.length === 0;
-        if (!lists.some(l => l.id === this.addListId)) this.addListId = '';
+        const chosen = lists.find(l => l.id === this.addListId);
+        if (chosen) this.addListName = chosen.name;
+        const gone = !!this.addListId && !chosen && this.boxesHaveWords();
+        if (!chosen && !gone) this.addListId = '';
+        select.hidden = lists.length === 0 && !gone;
         select.textContent = '';
         const option = (value, text) => {
             const o = document.createElement('option');
             o.value = value;
             o.textContent = text;
             select.appendChild(o);
+            return o;
         };
         option('', Shared.DEFAULT_LIST_NAME);
         lists.forEach(l => option(l.id, l.name));
+        if (gone) option(this.addListId, `${this.addListName || 'List'} (deleted)`).disabled = true;
         select.value = this.addListId || '';
+    }
+
+    boxesHaveWords() {
+        return !!document.getElementById('wordInput').value.trim() ||
+            (!document.getElementById('bulkPane').hidden && !!document.getElementById('bulkText').value.trim());
+    }
+
+    // True (and says so) when the list chosen for new words has been deleted meanwhile
+    chosenListGone() {
+        const list = this.addListId;
+        if (!list || this.settings.lists.some(l => l.id === list)) return false;
+        this.showStatus(`"${this.addListName || 'The list'}" was deleted: choose the list to add to.`, { error: true });
+        document.getElementById('addList').focus();
+        return true;
+    }
+
+    // Puts the look of new words back in the controls (`look` as currentLook() gives it)
+    setLook(look) {
+        const colorPicker = document.getElementById('colorPicker');
+        colorPicker.value = look.color;
+        if (this.addTextChoice) this.addTextChoice.setValue(look.textColor);
+        if (this.addStyleChoice) this.addStyleChoice.setValue(look.style);
+        colorPicker.dispatchEvent(new Event('input'));
+    }
+
+    // The name of a list ('' = My words), for messages
+    listNameOf(list) {
+        if (!list) return Shared.DEFAULT_LIST_NAME;
+        const found = this.settings.lists.find(l => l.id === list);
+        return found ? found.name : 'List';
     }
 
     currentLook() {
@@ -560,6 +605,7 @@ class Popup {
         const colorPicker = document.getElementById('colorPicker');
         const word = Shared.sanitizeWords([{ text: wordInput.value }])[0];
         if (!word) return;
+        if (this.chosenListGone()) return;
         const text = word.text;
         const list = this.addListId || '';
         const look = this.currentLook();
@@ -571,8 +617,30 @@ class Popup {
         const unchangedLook = !isNew && sameLook(existing, look.color, look.textColor, look.style);
         const wasPaused = !isNew && !!existing.paused;
 
+        // Show the word that was added (or found): unfold its list (drawn by change()). Not
+        // while a filter it matches is on: the lists are all open then anyway. (A filter it
+        // doesn't match is cleared, below.)
+        const filtering = !!(this.filterText || '').trim();
+        if (!(filtering && this.matchesFilter({ text }))) this.setCollapsed(list, false, { redraw: false });
+        // Not stored after all: once the stored settings are shown again, the word comes back
+        // in the box, with its look and its list chosen again. When the boxes aren't empty
+        // by then, or its list is gone, it's kept under them instead (see keepUnsaved()).
+        const typed = wordInput.value;
+        const change = { type: 'addWord', list, text, look };
+        const listName = this.listNameOf(list);
+        const giveBack = () => {
+            const listExists = !list || this.settings.lists.some(l => l.id === list);
+            if (!listExists || this.boxesHaveWords()) {
+                this.keepUnsaved({ change, listName });
+                return;
+            }
+            this.chooseList(list);
+            wordInput.value = typed;
+            this.setLook(look);
+            this.updateAddPreview();
+        };
         // An existing (or paused) entry gets the new look and is resumed: see applyChange()
-        this.change({ type: 'addWord', list, text, look });
+        if (!this.change(change, { onFailure: () => this.afterResync(giveBack) })) return;
 
         if (isNew) {
             // Move on to a fresh color (with automatic text) so consecutive words are easy to
@@ -635,21 +703,132 @@ class Popup {
         button.disabled = lines.length === 0;
     }
 
+    // At most MAX_BULK at once: the others stay in the paste box, to add next.
     addBulk() {
-        const lines = this.bulkLines().slice(0, MAX_BULK);
+        const all = this.bulkLines();
+        const lines = all.slice(0, MAX_BULK);
+        const rest = all.slice(MAX_BULK);
         if (lines.length === 0) return;
+        if (this.chosenListGone()) return;
         const list = this.addListId || '';
         const before = this.wordsOf(list).length;
-        const cycleColors = document.getElementById('bulkColors').checked;
-        const done = this.change({ type: 'addWords', list, texts: lines, look: this.currentLook(), cycleColors },
-            { undo: true });
+        const change = { type: 'addWords', list, texts: lines, look: this.currentLook(),
+            cycleColors: document.getElementById('bulkColors').checked };
+        const listName = this.listNameOf(list);
+        // Not stored after all: once the stored settings are shown again, the words come back
+        // in the paste box, with their look and their list chosen again. When the boxes aren't
+        // empty by then, or their list is gone, they're kept under them instead (see
+        // keepUnsaved()).
+        const giveBack = () => {
+            const listExists = !list || this.settings.lists.some(l => l.id === list);
+            if (!listExists || this.boxesHaveWords()) {
+                this.keepUnsaved({ change, listName });
+                return;
+            }
+            this.chooseList(list);
+            this.setLook(change.look);
+            document.getElementById('bulkColors').checked = change.cycleColors;
+            this.openBulk(lines.join('\n'));
+        };
+        const done = this.change(change, { undo: true, onFailure: () => this.afterResync(giveBack) });
         if (!done) return;
         const added = this.wordsOf(list).length - before;
-        this.closeBulk();
+        // Show the new words: unfold their list, when there are any and no filter is on (a
+        // filter keeps all lists open, and may hide all of them anyway)
+        if (added > 0 && !(this.filterText || '').trim()) this.setCollapsed(list, false);
+        if (rest.length > 0) {
+            document.getElementById('bulkText').value = rest.join('\n');
+            this.updateBulkCount();
+        } else {
+            this.closeBulk();
+        }
         this.updateHighlighting();
-        this.showStatus(added === lines.length
+        const left = rest.length > 0 ? ` ${plural(rest.length, 'more word')} (over ${MAX_BULK} at once) ${rest.length === 1 ? 'is' : 'are'} still in the box: add ${rest.length === 1 ? 'it' : 'them'} next.` : '';
+        this.showStatus((added === lines.length
             ? `Added ${plural(added, 'word')}.`
-            : `Added ${plural(added, 'word')}; ${lines.length - added} ${lines.length - added === 1 ? 'was' : 'were'} already in the list.`, { undo: added > 0 });
+            : `Added ${plural(added, 'word')}; ${lines.length - added} ${lines.length - added === 1 ? 'was' : 'were'} already in the list.`) + left,
+            { undo: added > 0 });
+    }
+
+    // ---------------------------------------------------------------- adds not saved
+
+    // Words which weren't stored after all, and couldn't go back in the boxes (other words
+    // are in them by then, or their list is gone): kept under the boxes, each batch with its
+    // list and its look, to add again as it was sent (or to My words, when their list has
+    // been deleted). `entry`: { change (addWord or addWords), listName }.
+    keepUnsaved(entry) {
+        this.unsaved = (this.unsaved || []).concat([entry]);
+        this.drawUnsaved();
+    }
+
+    drawUnsaved() {
+        const tray = document.getElementById('unsaved');
+        const entries = this.unsaved || [];
+        tray.hidden = entries.length === 0;
+        tray.textContent = '';
+        entries.forEach(entry => {
+            const { change } = entry;
+            const texts = change.type === 'addWord' ? [change.text] : change.texts;
+            const target = change.list ? this.settings.lists.find(l => l.id === change.list) : null;
+            const gone = !!change.list && !target;
+            const where = !change.list ? Shared.DEFAULT_LIST_NAME : target ? target.name : `${entry.listName} (deleted)`;
+            const item = document.createElement('div');
+            item.className = 'unsaved-item';
+            const label = document.createElement('span');
+            label.className = 'unsaved-text';
+            label.textContent = `Not saved, ${plural(texts.length, 'word')} for ${where}: ${texts.join(', ')}`;
+            label.title = texts.join('\n');
+            const retry = document.createElement('button');
+            retry.type = 'button';
+            retry.className = 'btn';
+            retry.textContent = gone ? `Add to ${Shared.DEFAULT_LIST_NAME}` : 'Add again';
+            retry.addEventListener('click', () => this.retryUnsaved(entry, gone));
+            const discard = UI.iconButton('times', texts.length === 1 ? 'Discard this word' : 'Discard these words', 'unsaved-discard');
+            discard.addEventListener('click', () => {
+                this.unsaved = this.unsaved.filter(e => e !== entry);
+                this.drawUnsaved();
+            });
+            item.append(label, retry, discard);
+            tray.appendChild(item);
+        });
+    }
+
+    // Sends a kept batch again, as it was (to My words instead, when its list is gone)
+    retryUnsaved(entry, toMyWords) {
+        const change = toMyWords ? { ...entry.change, list: '' } : entry.change;
+        const again = { change, listName: toMyWords ? Shared.DEFAULT_LIST_NAME : entry.listName };
+        const texts = change.type === 'addWord' ? [change.text] : change.texts;
+        const before = this.wordsOf(change.list).length;
+        this.unsaved = this.unsaved.filter(e => e !== entry);
+        const done = this.change(change, {
+            undo: change.type === 'addWords',
+            onFailure: () => this.afterResync(() => this.keepUnsaved(again))
+        });
+        if (!done) {
+            // (e.g. its list was deleted a moment ago)
+            this.keepUnsaved(entry);
+            return;
+        }
+        this.drawUnsaved();
+        const added = this.wordsOf(change.list).length - before;
+        if (!(this.filterText || '').trim()) this.setCollapsed(change.list, false);
+        this.updateHighlighting();
+        this.showStatus(added === texts.length
+            ? `Added ${plural(added, 'word')} to ${this.listNameOf(change.list)}.`
+            : `Added ${plural(added, 'word')} to ${this.listNameOf(change.list)}; ${texts.length - added} ${texts.length - added === 1 ? 'was' : 'were'} already in the list.`,
+            { undo: added > 0 && change.type === 'addWords' });
+    }
+
+    // Runs `then` once the stored settings are shown again after a save which failed (see
+    // trackSave()): what is given back is checked against them (a list deleted meanwhile)
+    afterResync(then) {
+        (this.afterSaves = this.afterSaves || []).push(then);
+    }
+
+    // Chooses the list new words go to ('' = My words)
+    chooseList(list) {
+        this.addListId = list || '';
+        this.updateListChoice();
     }
 
     // ---------------------------------------------------------------- status bar
@@ -732,6 +911,7 @@ class Popup {
     startEdit(list, text) {
         this.editing = { list, text };
         this.editDraft = null;
+        this.focusEditor = true;
         this.updateWordList();
     }
 
@@ -750,13 +930,33 @@ class Popup {
         if (Shared.findWordIndex(words, text, this.settings.caseSensitive, index) !== -1) {
             return `"${text}" is already in the list`;
         }
-        const changed = original.text !== text || !sameLook(original, color, textColor, style);
+        // Only what was changed in the editor is sent: a part left alone keeps what it is when
+        // the change is made, which another page may have changed meanwhile
+        const look = {};
+        if (color.toLowerCase() !== original.color.toLowerCase()) look.color = color;
+        if ((textColor || null) !== (original.textColor ? original.textColor.toLowerCase() : null)) look.textColor = textColor;
+        if ((style || 'background') !== Shared.wordStyle(original)) look.style = style;
+        const changed = original.text !== text || Object.keys(look).length > 0;
+        const draft = this.editDraft;
+        // A save which fails (it can't be made, or isn't stored) opens the editor again, with
+        // what was typed, unless another one was opened meanwhile
+        const reopen = () => {
+            if (this.editing) return;
+            this.editing = { list, text: original.text };
+            this.editDraft = draft;
+            this.focusEditor = true;
+        };
         this.editing = null;
         this.editDraft = null;
         if (changed) {
             // Checked again when it is saved, against the stored list: another popup may have
             // just given another entry the same name.
-            this.change({ type: 'editWord', list, text: original.text, newText: text, look: { color, textColor, style } });
+            const done = this.change({ type: 'editWord', list, text: original.text, newText: text, look },
+                { onFailure: reopen });
+            if (!done) {
+                reopen();
+                this.updateWordList();
+            }
             this.updateHighlighting();
         } else {
             this.updateWordList();
@@ -820,6 +1020,8 @@ class Popup {
     // Groups: My words, then each saved list, with whether it runs on this page and why.
     updateWordList() {
         const wordList = document.getElementById('wordList');
+        // Working in the editor: carry on in the same control once it is drawn again
+        const refocus = this.editorFocus();
         wordList.textContent = '';
         const duplicates = this.caseDuplicates();
         const scope = this.scope();
@@ -831,6 +1033,11 @@ class Popup {
         const withLists = groups.length > 1;
 
         groups.forEach(group => {
+            // A folded list shows its head only (while filtering, every list is open)
+            if (withLists && !filtering && this.isCollapsed(group.list)) {
+                wordList.appendChild(this.buildGroupHeader(group, scope, { collapsed: true }));
+                return;
+            }
             const rows = [];
             // Built with DOM APIs rather than innerHTML: word text and colors can come from an
             // imported settings file, so they must never be parsed as markup.
@@ -842,7 +1049,7 @@ class Popup {
             shown += rows.length;
             if (filtering && rows.length === 0) return;
 
-            if (withLists) wordList.appendChild(this.buildGroupHeader(group, scope));
+            if (withLists) wordList.appendChild(this.buildGroupHeader(group, scope, { filtering }));
             if (rows.length === 0 && withLists) {
                 const empty = document.createElement('div');
                 empty.className = 'group-empty';
@@ -859,14 +1066,96 @@ class Popup {
             wordList.appendChild(empty);
         }
         if (this.totalWords() === 0 && !withLists) wordList.textContent = '';   // :empty message
+        if (refocus) this.restoreEditorFocus(refocus);
         this.updateFilterRow(shown);
         this.updateWordCount();
         this.updateCounts();
     }
 
-    buildGroupHeader(group, scope) {
+    // ---------------------------------------------------------------- folding the lists
+
+    loadCollapsed() {
+        try {
+            const stored = JSON.parse(window.localStorage.getItem(COLLAPSED_KEY) || '[]');
+            return new Set(Array.isArray(stored) ? stored.filter(id => typeof id === 'string') : []);
+        } catch (e) {
+            return new Set();
+        }
+    }
+
+    saveCollapsed() {
+        // Only lists that still exist
+        const ids = new Set(['', ...this.settings.lists.map(l => l.id)]);
+        Array.from(this.collapsed).forEach(id => { if (!ids.has(id)) this.collapsed.delete(id); });
+        try {
+            window.localStorage.setItem(COLLAPSED_KEY, JSON.stringify(Array.from(this.collapsed)));
+        } catch (e) {
+            // Then it's only folded until the popup closes
+        }
+    }
+
+    isCollapsed(list) {
+        return this.collapsed.has(list || '');
+    }
+
+    // `focus`: put the keyboard on the list's fold button once drawn again (it was used)
+    setCollapsed(list, collapsed, { redraw = true, focus = false } = {}) {
+        if (collapsed === this.isCollapsed(list)) return;
+        if (collapsed) this.collapsed.add(list || ''); else this.collapsed.delete(list || '');
+        this.saveCollapsed();
+        if (!redraw) return;
+        this.updateWordList();
+        if (!focus) return;
+        const head = Array.from(document.querySelectorAll('#wordList .group'))
+            .find(g => g.dataset.list === (list || ''));
+        const toggle = head && head.querySelector('.group-toggle');
+        if (toggle) toggle.focus();
+    }
+
+    // The control of the open editor which has the focus: its place among the editor's
+    // controls (they are drawn the same way each time), the cursor, a color code being typed
+    editorFocus() {
+        const active = document.activeElement;
+        const row = active && active.closest ? active.closest('#wordList .word-item.editing') : null;
+        if (!row) return null;
+        const code = UI.colorCodeOf(active);
+        return {
+            index: Array.from(row.querySelectorAll('input, button, select')).indexOf(active),
+            code: code ? code.state() : null,
+            // The word's stored look the editor was drawn with (see restoreEditorFocus())
+            stored: JSON.parse(row.dataset.stored || '{}'),
+            selection: typeof active.selectionStart === 'number' ? [active.selectionStart, active.selectionEnd] : null
+        };
+    }
+
+    restoreEditorFocus({ index, code, stored, selection }) {
+        const row = document.querySelector('#wordList .word-item.editing');
+        const control = row && Array.from(row.querySelectorAll('input, button, select'))[index];
+        if (!control) return;
+        const field = UI.colorCodeOf(control);
+        if (field && code) {
+            // A code typed over the word's own color, which another page has just changed:
+            // dropping the code goes back to the new color, not the old one
+            const key = control.dataset.look;
+            const now = JSON.parse(row.dataset.stored || '{}');
+            if (key && code.typing && code.start === stored[key] && now[key] !== stored[key]) {
+                code = { ...code, start: now[key] };
+            }
+            field.restore(code);
+            return;
+        }
+        control.focus();
+        if (selection && typeof control.selectionStart === 'number') {
+            control.setSelectionRange(selection[0], selection[1]);
+        }
+    }
+
+    // `collapsed`: only the head is shown. While `filtering`, every list is open and can't be
+    // folded (the matching words stay in view).
+    buildGroupHeader(group, scope, { collapsed = false, filtering = false } = {}) {
         const header = document.createElement('div');
         header.className = 'group';
+        header.classList.toggle('collapsed', collapsed);
         header.dataset.list = group.list;
 
         let runs;
@@ -883,9 +1172,14 @@ class Popup {
         }
         header.classList.toggle('runs', !!runs);
 
+        // The name, and (folded) how many words it hides: the count stays when a long name is cut
+        const title = document.createElement('span');
+        title.className = 'group-title';
         const name = document.createElement('span');
         name.className = 'group-name';
         name.textContent = group.name;
+        name.title = group.name;
+        title.appendChild(name);
         const state = document.createElement('span');
         state.className = 'group-state';
         state.textContent = why;
@@ -894,10 +1188,30 @@ class Popup {
         count.className = 'group-count match-pill';
         count.hidden = true;
 
+        if (collapsed) {
+            const size = document.createElement('span');
+            size.className = 'group-size';
+            size.textContent = plural(group.words.length, 'word');
+            title.appendChild(size);
+        }
+
         const text = document.createElement('div');
         text.className = 'group-text';
-        text.append(name, state);
-        header.append(text, count);
+        text.append(title, state);
+
+        // The head folds and unfolds the list
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'group-toggle';
+        toggle.setAttribute('aria-expanded', String(!collapsed));
+        toggle.title = filtering ? 'Clear the filter to fold the lists'
+            : collapsed ? `Show the words of "${group.name}"` : `Fold "${group.name}"`;
+        toggle.disabled = filtering;
+        const chevron = UI.icon('chevron-down');
+        chevron.classList.add('group-chevron');
+        toggle.append(chevron, text);
+        toggle.addEventListener('click', () => this.setCollapsed(group.list, !collapsed, { focus: true }));
+        header.append(toggle, count);
 
         if (group.saved && this.siteAvailable) {
             const pick = UI.iconButton('crosshairs',
@@ -974,13 +1288,18 @@ class Popup {
         row.dataset.list = list;
         row.dataset.text = word.text;
 
-        // Unsaved edits survive the list being redrawn (e.g. pausing another word)
-        const draft = this.editDraft || {
+        // Unsaved edits survive the list being redrawn (e.g. pausing another word). Only what
+        // was changed in the editor is kept (this.editDraft.changes): the rest follows the
+        // word, which another page may have changed meanwhile, so that saving a new name
+        // doesn't put back a color set in the Settings a moment ago.
+        const current = {
             text: word.text,
-            color: word.color,
-            textColor: word.textColor || null,
+            color: word.color.toLowerCase(),
+            textColor: word.textColor ? word.textColor.toLowerCase() : null,
             style: Shared.wordStyle(word)
         };
+        const draft = { ...current, ...(this.editDraft ? this.editDraft.changes : {}) };
+        row.dataset.stored = JSON.stringify({ color: current.color, textColor: current.textColor });
 
         const textInput = document.createElement('input');
         textInput.type = 'text';
@@ -996,13 +1315,21 @@ class Popup {
         colorInput.title = 'Custom highlight color';
 
         const preview = this.buildPreview();
+        const code = this.buildColorCode(colorInput, 'Highlight color code');
         let styleChoice = null;   // created after textChoice, which already asks for the style
         const updatePreview = () => {
             const look = { color: colorInput.value, textColor: textChoice.value, style: styleChoice.value };
             preview.update(textInput.value, look);
             textChoice.refresh();
             styleChoice.refresh();
-            this.editDraft = { text: textInput.value, ...look };
+            code.refresh();
+            const values = { text: textInput.value, ...look };
+            const changes = {};
+            Object.keys(values).forEach(key => {
+                const value = typeof values[key] === 'string' && key !== 'text' ? values[key].toLowerCase() : values[key];
+                if (value !== current[key]) changes[key] = value;
+            });
+            this.editDraft = { changes };
         };
         const textChoice = this.buildTextColorChoice(
             draft.textColor, () => colorInput.value, updatePreview,
@@ -1056,20 +1383,29 @@ class Popup {
         });
 
         controls.append(saveBtn, cancelBtn);
+        // Which part of the look each code field sets (see restoreEditorFocus())
+        code.input.dataset.look = 'color';
+        const textCode = textChoice.element.querySelector('.color-code-input');
+        if (textCode) textCode.dataset.look = 'textColor';
         row.append(
             textInput,
             controls,
-            this.colorRow('Highlight', colorInput, palette),
+            this.colorRow('Highlight', colorInput, code.element, palette),
             this.colorRow('Text', textChoice.element),
             this.colorRow('Style', styleChoice.element),
             preview.element,
             error
         );
         updatePreview();
-        setTimeout(() => {
-            textInput.focus();
-            textInput.select();
-        }, 0);
+        // Into the text when the editor opens; not when it is only drawn again (another list
+        // folded, a word paused), which would take the focus from what was used
+        if (this.focusEditor) {
+            this.focusEditor = false;
+            setTimeout(() => {
+                textInput.focus();
+                textInput.select();
+            }, 0);
+        }
         return row;
     }
 
@@ -1124,11 +1460,14 @@ class Popup {
         custom.title = 'Custom text color';
         custom.value = value && value !== '#000000' && value !== '#ffffff' ? value : '#cc0000';
 
+        // Its code, to copy or paste (empty for Auto)
+        let code = null;
         const refresh = () => {
             auto.classList.toggle('selected', value === null);
             black.classList.toggle('selected', value === '#000000');
             white.classList.toggle('selected', value === '#ffffff');
             custom.classList.toggle('selected', value !== null && value !== '#000000' && value !== '#ffffff');
+            if (code) code.refresh();
             if (getStyle() === 'background') {
                 const resolved = Shared.autoTextColor(getBackground());
                 auto.title = `Automatic (currently ${resolved === '#000000' ? 'black' : 'white'} on this highlight color)`;
@@ -1146,13 +1485,31 @@ class Popup {
         black.addEventListener('click', () => set('#000000'));
         white.addEventListener('click', () => set('#ffffff'));
         custom.addEventListener('input', () => set(custom.value.toLowerCase()));
+        code = UI.colorCodeField({
+            get: () => value,
+            // The custom swatch when typing a code began: a dropped code puts it back too
+            begin: () => custom.value,
+            set: (hex, { rollback = false, memo } = {}) => {
+                if (rollback && memo) custom.value = memo;
+                else if (hex && hex !== '#000000' && hex !== '#ffffff') custom.value = hex;
+                set(hex);   // (null: back to Auto)
+            },
+            label: 'Text color code',
+            empty: 'auto'
+        });
 
-        box.append(auto, black, white, custom);
+        box.append(auto, black, white, custom, code.element);
         refresh();
         return {
             element: box,
             get value() { return value; },
             reset() { value = null; refresh(); },
+            // (null: Auto)
+            setValue(next) {
+                value = Shared.isValidColor(next) ? next.toLowerCase() : null;
+                if (value && value !== '#000000' && value !== '#ffffff') custom.value = value;
+                refresh();
+            },
             refresh
         };
     }
@@ -1194,6 +1551,10 @@ class Popup {
         return {
             element: box,
             get value() { return value; },
+            setValue(next) {
+                value = STYLES.some(s => s.value === next) ? next : 'background';
+                refresh();
+            },
             refresh
         };
     }
@@ -1218,6 +1579,19 @@ class Popup {
                 box.title = `How "${word.textContent}" will look on a page`;
             }
         };
+    }
+
+    // The code of the color of a color <input>, to copy it or paste one (see UI.colorCodeField)
+    buildColorCode(colorInput, label) {
+        return UI.colorCodeField({
+            get: () => colorInput.value.toLowerCase(),
+            set: hex => {
+                colorInput.value = hex;
+                // As if picked: the swatches and the preview follow
+                colorInput.dispatchEvent(new Event('input'));
+            },
+            label
+        });
     }
 
     colorRow(label, ...children) {
@@ -1279,9 +1653,10 @@ class Popup {
     // which makes it on the *latest stored* settings: a change made on the Settings page (or
     // synced from another device) a moment earlier isn't overwritten by our older copy, and
     // closing the popup can't cancel a change it has already shown.
-    // `undo`: keep the change which undoes this one, for the Undo button. Returns false when the change
-    // can't be made (the reason is shown).
-    change(change, { undo = false, redraw = true } = {}) {
+    // `undo`: keep the change which undoes this one, for the Undo button. `onFailure`: called
+    // when it isn't stored after all (before the stored settings are shown again). Returns
+    // false when the change can't be made (the reason is shown).
+    change(change, { undo = false, redraw = true, onFailure = null } = {}) {
         if (this.loadFailed) return false;
         const before = this.snapshot();
         const mine = this.snapshot();
@@ -1310,24 +1685,33 @@ class Popup {
                 document.getElementById('undoButton').hidden = !(this.statusWantsUndo && this.undoChange);
             }
             return result;
-        }));
+        }), onFailure);
         return true;
     }
 
-    trackSave(write) {
+    trackSave(write, onFailure = null) {
         this.pendingSaves++;
         this.lastSave = write().then(() => true, error => {
             // e.g. the 100 KB total chrome.storage.sync quota
             console.error('Error saving settings:', error);
             this.showStatus('Not saved: ' + error.message, { error: true });
+            // Read the stored settings again once all saves are done, even if a later one
+            // succeeds: our copy still shows this one
+            this.resyncAfterSave = true;
+            if (onFailure) onFailure();
             return false;
-        }).then(saved => {
+        }).then(async saved => {
             this.pendingSaves--;
             if (this.pendingSaves === 0 && (this.resyncAfterSave || !saved)) {
                 // Pick up changes made elsewhere meanwhile, or show what's really stored
                 // after a failed save.
                 this.resyncAfterSave = false;
-                this.resync();
+                await this.resync();
+            }
+            if (this.pendingSaves === 0 && this.afterSaves) {
+                const waiting = this.afterSaves;
+                this.afterSaves = null;
+                waiting.forEach(then => then());
             }
             return saved;
         });

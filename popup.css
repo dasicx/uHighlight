@@ -199,11 +199,44 @@ input[type="color"].word-color:hover {
     border-color: var(--ng-text);
 }
 
-/* Preset colors */
+/* A color's code, to copy or paste: a small field and a copy button */
+.color-code {
+    align-items: center;
+    display: inline-flex;
+    flex: none;
+    gap: 1px;
+}
+.color-code-input.field {
+    border-radius: 4px;
+    font: 12px/1 var(--wh-mono);
+    height: 22px;
+    padding: 0 4px;
+    width: 58px;
+}
+.color-code .icon-button {
+    font-size: 13px;
+    height: 22px;
+    min-width: 20px;
+    opacity: 0.6;
+    padding: 0;
+}
+.color-code .icon-button:hover,
+.color-code .icon-button:focus-visible,
+.color-code .icon-button.copied {
+    opacity: 1;
+}
+.color-code .icon-button.copied {
+    color: var(--ng-allow);
+}
+.color-code .icon-button[disabled] {
+    opacity: 0.25;
+}
+
+/* Preset colors (one row, beside the color and its code) */
 .palette {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 3px;
 }
 .palette .swatch {
     border: 1px solid var(--ng-cell-border);
@@ -518,6 +551,43 @@ input[type="color"].word-color:hover {
     resize: vertical;
     width: 100%;
 }
+/* Words which weren't saved, to add again */
+.unsaved {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 7px;
+}
+.unsaved[hidden] {
+    display: none;
+}
+.unsaved-item {
+    align-items: center;
+    background-color: var(--ng-block-soft);
+    border-left: 3px solid var(--ng-block);
+    color: var(--ng-on-block-soft);
+    display: flex;
+    font-size: 12.5px;
+    gap: 6px;
+    padding: 4px 4px 4px 8px;
+}
+.unsaved-text {
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+.unsaved-item .btn {
+    flex: none;
+    font-size: 12px;
+    padding: 0.15em 0.6em;
+}
+.unsaved-discard {
+    flex: none;
+}
 .bulk-row {
     align-items: center;
     display: flex;
@@ -547,15 +617,67 @@ input[type="color"].word-color:hover {
     gap: 6px;
     padding: 5px 6px 5px 8px;
 }
+/* The head folds and unfolds its list */
+.group-toggle {
+    align-items: center;
+    background: none;
+    border: 0;
+    border-radius: 4px;
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    flex: 1 1 auto;
+    font: inherit;
+    gap: 5px;
+    margin: -2px 0 -2px -4px;
+    min-width: 0;
+    padding: 2px 0 2px 2px;
+    text-align: left;
+}
+.group-toggle:not(:disabled):hover .group-chevron {
+    color: var(--ng-text);
+}
+/* While filtering every list is open */
+.group-toggle:disabled {
+    cursor: default;
+}
+.group-toggle:disabled .group-chevron {
+    opacity: 0.35;
+}
+.group-chevron {
+    color: var(--ng-text-muted);
+    flex: none;
+    font-size: 13px;
+    transition: transform 0.12s;
+}
+.group.collapsed .group-chevron {
+    transform: rotate(-90deg);
+}
 .group-text {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
     min-width: 0;
 }
+.group-title {
+    align-items: baseline;
+    display: flex;
+    gap: 6px;
+    min-width: 0;
+}
 .group-name {
     font-size: 14.5px;
     font-weight: bold;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.group-size {
+    color: var(--ng-text-muted);
+    flex: none;
+    font-size: 11.5px;
+    white-space: nowrap;
 }
 .group-state {
     color: var(--ng-text-muted);

@@ -256,7 +256,8 @@ globalThis.WordHighlighterShared = (() => {
     // - local: kept on this device only (chrome.storage.local), never synced.
 
     const MAX_LIST_NAME = 60;
-    const MAX_SECTION = 300;
+    // A section's selector: never shortened (a cut selector is no selector), refused when longer
+    const MAX_SECTION = 1000;
 
     function newId() {
         const bytes = new Uint8Array(6);
@@ -325,11 +326,15 @@ globalThis.WordHighlighterShared = (() => {
             // Addresses were given but none is usable: without them the list would run on every
             // site where highlighting is on, far more than meant. It is turned off instead.
             const unusable = given.length > 0 && urls.length === 0;
-            const section = typeof l.section === 'string' ? l.section.trim().slice(0, MAX_SECTION) : '';
+            // A section too long to keep (from an imported file): left out, and the list turned
+            // off, as without it the list would run on the whole page
+            const givenSection = typeof l.section === 'string' ? l.section.trim() : '';
+            const tooLong = givenSection.length > MAX_SECTION;
+            const section = tooLong ? '' : givenSection;
             clean.push({
                 id,
                 name: name || 'List',
-                enabled: l.enabled !== false && !unusable,
+                enabled: l.enabled !== false && !unusable && !tooLong,
                 words: sanitizeWords(l.words),
                 urls,
                 section,
@@ -820,6 +825,27 @@ globalThis.WordHighlighterShared = (() => {
         return word;
     }
 
+    // Only the parts of a look which are given (an edit sends what was changed in it): the
+    // others stay as the word has them, which another page may have just changed. textColor
+    // null = automatic, style 'background' = the default.
+    function withLookChanges(word, look) {
+        const l = look || {};
+        const given = key => Object.prototype.hasOwnProperty.call(l, key);
+        if (given('color') && isValidColor(l.color)) word.color = l.color;
+        if (!isValidColor(word.color)) word.color = '#ffff00';
+        if (given('textColor')) {
+            if (isValidColor(l.textColor)) word.textColor = l.textColor; else delete word.textColor;
+        }
+        if (given('style')) {
+            if (l.style === 'underline' || l.style === 'wavy') word.style = l.style; else delete word.style;
+        }
+        return word;
+    }
+
+    function sectionTooLong(section) {
+        return `The section is too long: ${section.length} characters, at most ${MAX_SECTION}. Pick a smaller part of the page, or shorten the selector.`;
+    }
+
     const SITE_LISTS = ['enabledDomains', 'excludedDomains'];
 
     // Applies a change to `settings` (edited in place) and returns the settings to save.
@@ -920,8 +946,9 @@ globalThis.WordHighlighterShared = (() => {
                 if (findWordIndex(t.words, text, settings.caseSensitive, index) !== -1) {
                     throw new Error(`"${text}" is already in the list.`);
                 }
-                // Keeps the entry's other settings (paused)
-                t.words[index] = withLook({ ...t.words[index], text }, c.look);
+                // Keeps the entry's other settings (paused), and the parts of its look which
+                // weren't changed
+                t.words[index] = withLookChanges({ ...t.words[index], text }, c.look);
                 return t.saved();
             }
             case 'restoreWords': {
@@ -990,6 +1017,9 @@ globalThis.WordHighlighterShared = (() => {
             case 'updateList': {
                 const list = findList(c.id);
                 const patch = c.patch && typeof c.patch === 'object' ? c.patch : {};
+                if (has(patch, 'section') && typeof patch.section === 'string' && patch.section.trim().length > MAX_SECTION) {
+                    throw new Error(sectionTooLong(patch.section.trim()));
+                }
                 if (has(patch, 'urls')) {
                     const bad = (Array.isArray(patch.urls) ? patch.urls : []).filter(u => cleanText(u) && !normalizeUrlPattern(u));
                     if (bad.length > 0) throw new Error(`Not an address pattern: ${bad.join(', ')}`);
@@ -1004,7 +1034,9 @@ globalThis.WordHighlighterShared = (() => {
             }
             case 'setListSection': {
                 const list = findList(c.id);
-                list.section = typeof c.section === 'string' ? c.section.trim().slice(0, MAX_SECTION) : '';
+                const section = typeof c.section === 'string' ? c.section.trim() : '';
+                if (section.length > MAX_SECTION) throw new Error(sectionTooLong(section));
+                list.section = section;
                 return lists();
             }
             case 'removeList': {
@@ -1412,6 +1444,7 @@ globalThis.WordHighlighterShared = (() => {
         hasSiteRule,
         DEFAULT_LIST_NAME,
         LOCAL_LISTS_KEY,
+        MAX_SECTION,
         newListId: newId,
         sanitizeLists,
         normalizeUrlPattern,

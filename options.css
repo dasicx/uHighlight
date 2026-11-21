@@ -402,7 +402,7 @@ p.footnote {
     display: inline-flex;
     font: 14px system-ui, 'Segoe UI', Arial, sans-serif;
     gap: 2px;
-    padding: 2px 2px 2px 6px;
+    padding: 2px 2px 2px 4px;
 }
 .word-chip.paused {
     opacity: 0.5;
@@ -435,6 +435,50 @@ p.footnote {
     flex: 1 1 auto;
     font: 14px/1.4 var(--wh-mono);
     resize: vertical;
+}
+
+/* Lists: how to change the colors of the words */
+.colors-note {
+    align-items: flex-start;
+    background-color: var(--ng-pending);
+    border-left: 3px solid var(--ng-accent-bg);
+    display: flex;
+    gap: 8px;
+    /* In line with the rows of the groups (their title column is 10.5em wide) */
+    margin: 30px 0 0 calc(10.5em + 28px);
+    max-width: 44em;
+    padding: 6px 10px;
+}
+.colors-note > span {
+    font-size: 14.5px;
+}
+.colors-note > .fa-icon {
+    color: var(--ng-accent);
+    margin-top: 3px;
+}
+
+/* A word's highlight color: a small square, a click opens the picker */
+input[type="color"].chip-color {
+    background: none;
+    border: 1px solid var(--ng-button-border);
+    border-radius: 3px;
+    box-sizing: border-box;
+    cursor: pointer;
+    flex: none;
+    height: 18px;
+    margin-right: 2px;
+    padding: 1px;
+    width: 18px;
+}
+input[type="color"].chip-color::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+input[type="color"].chip-color::-webkit-color-swatch {
+    border: 0;
+    border-radius: 2px;
+}
+input[type="color"].chip-color:hover {
+    border-color: var(--ng-text);
 }
 
 /* Import: merge or replace */
@@ -548,6 +592,9 @@ ul.credits > li {
     }
     section.group {
         display: block;
+    }
+    .colors-note {
+        margin-left: 0;
     }
     section.group > h3 {
         padding: 10px 0 4px;

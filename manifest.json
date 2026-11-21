@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "uHighlight",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Highlight the words that matter on every page. Lists for each site, every match in one panel, and what's new since you last looked.",
   "homepage_url": "https://dasicx.com/uhighlight.html",
   "minimum_chrome_version": "119",
