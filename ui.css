@@ -63,7 +63,7 @@ label:has(> input:focus-visible),
     outline-offset: 1px;
 }
 
-/* Icons: Font Awesome 4.7 symbols (img/icons.svg), as in uMatrixNG. Written as
+/* Icons: Font Awesome 4.7 drawings (img/icons.js), as in uMatrixNG. Written as
    <span class="fa-icon">name</span>; ui.js puts the drawing in place of the name. */
 .fa-icon {
     align-items: center;

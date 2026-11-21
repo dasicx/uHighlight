@@ -298,9 +298,29 @@ globalThis.WordHighlighterShared = (() => {
             ? host === hostRule.slice(2) || host.endsWith('.' + hostRule.slice(2))
             : host === hostRule;
         if (!hostOk) return false;
-        const regex = new RegExp('^' + pathGlob.split('*').map(part =>
-            part.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$');
-        return regex.test(address.pathname + address.search) || regex.test(address.pathname);
+        return globMatches(pathGlob, address.pathname + address.search) ||
+            globMatches(pathGlob, address.pathname);
+    }
+
+    // Does `text` match `glob`, where "*" stands for any run of characters? In one pass: a
+    // RegExp with a ".*" for each "*" backtracks, and a pattern with a few stars could take
+    // seconds to minutes on a long address, freezing the page and the popup.
+    function globMatches(glob, text) {
+        const parts = glob.split('*');
+        if (parts.length === 1) return text === glob;
+        const first = parts[0];
+        const last = parts[parts.length - 1];
+        if (text.length < first.length + last.length ||
+            !text.startsWith(first) || !text.endsWith(last)) return false;
+        // The parts between the stars, each as early as it can be (leftmost is always best)
+        const end = text.length - last.length;
+        let pos = first.length;
+        for (let i = 1; i < parts.length - 1; i++) {
+            const at = text.indexOf(parts[i], pos);
+            if (at === -1 || at + parts[i].length > end) return false;
+            pos = at + parts[i].length;
+        }
+        return true;
     }
 
     function sanitizeRev(rev) {

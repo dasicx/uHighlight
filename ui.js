@@ -3,17 +3,25 @@
 
 (function () {
     const SVG = 'http://www.w3.org/2000/svg';
-    const SPRITE = '/img/icons.svg';
+    const ICONS = globalThis.WordHighlighterIcons || {};
+    // One drawn <svg> for each icon, cloned for each use
+    const drawn = new Map();
 
-    // The drawing of an icon of img/icons.svg
+    // The drawing of an icon of img/icons.js. Its shapes are in the <svg> itself: no
+    // <use href="file.svg#name">, which can keep the page's load event - and with it the
+    // toolbar popup, shown only once loaded - waiting (seen in Edge: the popup didn't open).
     function icon(name) {
-        const svg = document.createElementNS(SVG, 'svg');
-        svg.setAttribute('class', 'fa-icon_' + name);
-        svg.setAttribute('aria-hidden', 'true');
-        const use = document.createElementNS(SVG, 'use');
-        use.setAttribute('href', SPRITE + '#' + name);
-        svg.appendChild(use);
-        return svg;
+        let svg = drawn.get(name);
+        if (!svg) {
+            svg = document.createElementNS(SVG, 'svg');
+            svg.setAttribute('class', 'fa-icon_' + name);
+            svg.setAttribute('aria-hidden', 'true');
+            const [viewBox, shapes] = ICONS[name] || ['0 0 16 16', ''];
+            svg.setAttribute('viewBox', viewBox);
+            svg.innerHTML = shapes;
+            drawn.set(name, svg);
+        }
+        return svg.cloneNode(true);
     }
 
     // <span class="fa-icon">cog</span>: the name is replaced with the drawing

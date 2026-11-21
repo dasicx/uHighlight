@@ -67,6 +67,7 @@ class Popup {
             this.render();
             if (this.loadFailed) {
                 this.setReadOnly();
+                this.retryLoading();
                 return;
             }
             // Keep in sync with changes made on the Settings page while the popup is open
@@ -81,22 +82,56 @@ class Popup {
             await this.updateHighlighting();
         } catch (error) {
             console.error('Error initializing popup:', error);
+            const settingsLoaded = !this.loadFailed;
             this.loadFailed = true;
             try { this.render(); } catch (e) { /* as much as can be shown */ }
-            this.setReadOnly();
+            // The settings were read fine: say what went wrong rather than blaming them
+            this.setReadOnly(settingsLoaded
+                ? `Something went wrong while opening the popup (${error && error.message || error}), ` +
+                  'so editing is turned off. Close and reopen this popup to try again.'
+                : undefined);
+            if (!settingsLoaded) this.retryLoading();
         }
     }
 
     // Without the real settings, any save would replace them with the empty placeholder state,
     // so show an error and lock everything except the Settings button.
-    setReadOnly() {
+    setReadOnly(message = 'Could not load your settings, so editing is turned off to protect them. ' +
+            'Trying again…') {
         this.loadFailed = true;
         const error = document.getElementById('loadError');
-        error.textContent = 'Could not load your settings, so editing is turned off to protect them. ' +
-            'Close and reopen this popup to try again.';
+        error.textContent = message;
         error.hidden = false;
         document.querySelectorAll('input, button, select, textarea').forEach(el => {
             if (el.id !== 'openSettings') el.disabled = true;
+        });
+    }
+
+    // The settings couldn't be read, most often because sync is still delivering them (from
+    // another device, or right after a save there). Tries again a few times and whenever they
+    // change, and starts the popup afresh as soon as they read fine, so it doesn't stay locked.
+    retryLoading() {
+        let done = false;
+        let tries = 0;
+        const attempt = async () => {
+            if (done) return;
+            try {
+                await Shared.loadSettings();
+            } catch (e) {
+                if (++tries === 4 && !done) {
+                    document.getElementById('loadError').textContent =
+                        'Could not load your settings, so editing is turned off to protect them. ' +
+                        'If you use sync, it may still be bringing them in: this popup starts ' +
+                        'again as soon as they arrive. You can also close and reopen it.';
+                }
+                return;
+            }
+            done = true;
+            location.reload();
+        };
+        [1000, 3000, 7000, 15000].forEach(delay => setTimeout(attempt, delay));
+        chrome.storage.onChanged.addListener((changes, area) => {
+            if (Shared.isSettingsChange(changes, area)) attempt();
         });
     }
 
